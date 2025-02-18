@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Icon from './icon/icon.component';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 interface BettingModalProps {
   isOpen: boolean;
@@ -9,6 +11,9 @@ interface BettingModalProps {
 }
 
 const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm, balance }) => {
+  const { publicKey } = useWallet();
+  const { connection } = useConnection();
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [bet, setBet] = useState(10);
   const [risk, setRisk] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -30,14 +35,36 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm,
   ];
 
   useEffect(() => {
+    const getBalance = async () => {
+      if (publicKey) {
+        try {
+          const balance = await connection.getBalance(publicKey);
+          setWalletBalance(balance / LAMPORTS_PER_SOL);
+        } catch (error) {
+          console.error('Error fetching balance:', error);
+        }
+      }
+    };
+
+    getBalance();
+  }, [connection, publicKey]);
+
+  useEffect(() => {
     // محاسبه حداکثر برد ممکن (با ضریب Royal Flush)
     const maxWin = bet * 50 * (1 + risk);
     setPotentialWin(maxWin);
   }, [bet, risk]);
 
+  const isInsufficientBalance = bet > (walletBalance || 0);
+  const isValidBet = bet >= 10 && !isInsufficientBalance;
+
   const handleConfirm = () => {
-    if (bet > balance) {
-      setError("Insufficient balance");
+    if (!walletBalance) {
+      setError("Could not fetch wallet balance");
+      return;
+    }
+    if (isInsufficientBalance) {
+      setError("Insufficient SOL balance in wallet");
       return;
     }
     if (bet < 10) {
@@ -56,9 +83,20 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm,
           <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Place Your Bet
           </h2>
-          <p className="text-base-content/60">
-            Current Balance: <span className="font-bold text-primary">${balance}</span>
-          </p>
+          {publicKey ? (
+            <div className='flex  gap-2 bg-base-200'>
+              <p className="text-base-content/60">
+                Game Balance: <span className="font-bold text-primary">{walletBalance?.toFixed(2) || '0'} SOL</span>
+              </p>
+              <p className="text-base-content/60">
+                Wallet Balance: <span className="font-bold text-secondary">{walletBalance?.toFixed(2) || '0'} SOL</span>
+              </p>
+            </div>
+          ) : (
+            <p className="text-base-content/60">
+              Balance: <span className="font-bold text-error">Not Connected</span>
+            </p>
+          )}
         </div>
 
         {/* Quick Bet Presets */}
@@ -84,22 +122,31 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm,
               <Icon name="wallet" className="text-xl text-primary" />
               Bet Amount
             </label>
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center py-2">
               <button 
                 onClick={() => setBet(Math.max(10, bet - 10))} 
                 className="btn btn-circle btn-sm btn-primary btn-outline"
               >
                 -
               </button>
-              <input
-                type="number"
-                value={bet}
-                onChange={(e) => setBet(Number(e.target.value))}
-                className="input input-bordered w-24 text-center font-bold"
-                min={10}
-              />
+              <div className="relative">
+                <input
+                  type="number"
+                  value={bet}
+                  onChange={(e) => setBet(Number(e.target.value))}
+                  className={`input input-bordered w-24 text-center font-bold ${
+                    isInsufficientBalance ? 'input-error border-2' : ''
+                  }`}
+                  min={10}
+                />
+                {isInsufficientBalance && (
+                  <div className="absolute -bottom-5 left-0 right-0 text-center">
+                    <span className="text-xs text-error text-nowrap">Insufficient balance</span>
+                  </div>
+                )}
+              </div>
               <button 
-                onClick={() => setBet(Math.min(balance, bet + 10))} 
+                onClick={() => setBet(Math.min(walletBalance || 0, bet + 10))} 
                 className="btn btn-circle btn-sm btn-primary btn-outline"
               >
                 +
@@ -163,16 +210,11 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm,
           </div>
         </div>
 
-        {error && (
-          <div className="bg-error/10 p-3 rounded-lg text-center">
-            <p className="text-error font-semibold">{error}</p>
-          </div>
-        )}
-
+        {/* Action Buttons */}
         <div className="flex gap-4 pt-4 flex-col md:flex-row">
           <button
             onClick={onClose}
-            className="btn btn-outline flex-1 gap-2 py-3 "
+            className="btn btn-outline flex-1 gap-2 py-3"
           >
             <Icon name="closeCircle" className="text-xl" />
             Cancel
@@ -180,12 +222,22 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm,
 
           <button
             onClick={handleConfirm}
-            className="btn btn-primary flex-1 gap-2 py-3 "
+            disabled={!isValidBet}
+            className={`btn btn-primary flex-1 gap-2 py-3 ${
+              !isValidBet ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
             <Icon name="game" className="text-xl" />
             Place Bet & Play
           </button>
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="bg-error/10 p-3 rounded-lg text-center">
+            <p className="text-error font-semibold">{error}</p>
+          </div>
+        )}
       </div>
     </div>
   );

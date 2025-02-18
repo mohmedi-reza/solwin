@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import Icon from '../components/icon/icon.component';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import AddressShort from '../components/AddressShort';
 
 const DefaultLayout: React.FC = () => {
     const { wallet, disconnect, publicKey } = useWallet();
@@ -11,6 +12,7 @@ const DefaultLayout: React.FC = () => {
     const { setVisible } = useWalletModal();
     const [copied, setCopied] = useState(false);
     const [balance, setBalance] = useState<number | null>(null);
+    const location = useLocation();
 
     useEffect(() => {
         let isMounted = true;
@@ -48,6 +50,13 @@ const DefaultLayout: React.FC = () => {
         }
     };
 
+    const isActiveRoute = (path: string) => {
+        if (path === '/') {
+            return location.pathname === '/' || location.pathname === '/game';
+        }
+        return location.pathname === path;
+    };
+
     return (
         <div className="min-h-screen bg-base-100">
             {/* Header */}
@@ -62,9 +71,27 @@ const DefaultLayout: React.FC = () => {
 
                         {/* Navigation - Hide on mobile */}
                         <nav className="hidden md:flex items-center gap-6">
-                            <a href="/" className="nav-link">Games</a>
-                            <a href="/history" className="nav-link">History</a>
-                            <a href="/me" className="nav-link">Profile</a>
+                            <Link 
+                                to="/" 
+                                className={`btn btn-ghost gap-2 ${isActiveRoute('/') ? 'btn-active text-primary' : 'text-base-content/70'}`}
+                            >
+                                <Icon name="game" className="text-lg" />
+                                <span>Games</span>
+                            </Link>
+                            <Link 
+                                to="/history" 
+                                className={`btn btn-ghost gap-2 ${isActiveRoute('/history') ? 'btn-active text-primary' : 'text-base-content/70'}`}
+                            >
+                                <Icon name="history" className="text-lg" />
+                                <span>History</span>
+                            </Link>
+                            <Link 
+                                to="/me" 
+                                className={`btn btn-ghost gap-2 ${isActiveRoute('/me') ? 'btn-active text-primary' : 'text-base-content/70'}`}
+                            >
+                                <Icon name="user" className="text-lg" />
+                                <span>Profile</span>
+                            </Link>
                         </nav>
 
                         {/* Actions - Responsive */}
@@ -78,19 +105,20 @@ const DefaultLayout: React.FC = () => {
                             <div className="dropdown dropdown-end">
                                 <button
                                     onClick={() => !wallet && setVisible(true)}
-                                    className="btn btn-primary btn-sm sm:btn-md normal-case"
+                                    className="btn relative btn-primary btn-sm sm:btn-md normal-case"
                                 >
                                     {!wallet ? (
                                         <>
                                             <Icon name="wallet" className="text-lg sm:hidden" />
                                             <span className="hidden sm:inline">Connect Wallet</span>
+                                            <span className="animate-ping -right-1 -top-1 absolute inline-flex status status-error size-2"></span>
+
                                         </>
                                     ) : (
                                         <div className="flex items-center gap-2">
                                             <Icon name="wallet" className="text-lg" />
                                             <span className="hidden sm:inline">
-                                                {publicKey?.toBase58().slice(0, 4)}...
-                                                {publicKey?.toBase58().slice(-4)}
+                                                <AddressShort address={publicKey?.toBase58()||"-"} />
                                             </span>
                                         </div>
                                     )}
@@ -127,18 +155,33 @@ const DefaultLayout: React.FC = () => {
             {/* Mobile Navigation Menu */}
             <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-base-100 border-t border-base-content/10">
                 <div className="flex justify-around p-2 py-4">
-                    <a href="/" className="mobile-nav-link flex items-center gap-2 cursor-pointer aria-pressed:bg-primary">
+                    <Link 
+                        to="/" 
+                        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+                            isActiveRoute('/') ? 'bg-primary/10 text-primary' : 'text-base-content/70'
+                        }`}
+                    >
                         <Icon name="game" className="text-xl" />
-                        <span className="text-xs text-nowrap">Games</span>
-                    </a>
-                    <a href="/history" className="mobile-nav-link flex items-center gap-2 cursor-pointer aria-pressed:bg-primary">
+                        <span className="text-xs">Games</span>
+                    </Link>
+                    <Link 
+                        to="/history" 
+                        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+                            isActiveRoute('/history') ? 'bg-primary/10 text-primary' : 'text-base-content/70'
+                        }`}
+                    >
                         <Icon name="history" className="text-xl" />
-                        <span className="text-xs text-nowrap">History</span>
-                    </a>
-                    <a href="/me" className="mobile-nav-link flex items-center gap-2 cursor-pointer aria-pressed:bg-primary">
+                        <span className="text-xs">History</span>
+                    </Link>
+                    <Link 
+                        to="/me" 
+                        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+                            isActiveRoute('/me') ? 'bg-primary/10 text-primary' : 'text-base-content/70'
+                        }`}
+                    >
                         <Icon name="user" className="text-xl" />
-                        <span className="text-xs text-nowrap">Profile</span>
-                    </a>
+                        <span className="text-xs">Profile</span>
+                    </Link>
                 </div>
             </div>
 

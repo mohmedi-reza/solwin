@@ -127,7 +127,7 @@ const HomePage: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-r from-primary via-secondary to-primary opacity-0 group-hover:opacity-20 transition-opacity rounded-lg"></div>
                   <Icon name="game" className="text-xl group-hover:rotate-12 transition-transform" />
                   <span className="font-bold">Play Now</span>
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-secondary rounded-full animate-ping"></div>
+                  <div className="absolute -top-1 -right-1 status status-error size-2 animate-ping"></div>
                 </Link>
               </div>
 

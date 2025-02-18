@@ -4,6 +4,8 @@ import BettingModal from '../components/BettingModal';
 import Icon from '../components/icon/icon.component';
 import { PokerGame } from '../services/pokerGame';
 import { Card, HandResult } from '../types/poker';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 const game = new PokerGame();
 
@@ -13,6 +15,8 @@ interface ShufflingCard extends Card {
 
 const GamePage: React.FC = () => {
   const navigate = useNavigate();
+  const { publicKey } = useWallet();
+  const { connection } = useConnection();
   const [showBettingModal, setShowBettingModal] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentHand, setCurrentHand] = useState<Card[]>([]);
@@ -27,12 +31,31 @@ const GamePage: React.FC = () => {
     { name: 'Player3', hand: 'Straight Flush', amount: 1200 },
   ]);
   const [isRulesOpen, setIsRulesOpen] = useState(true);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   const rulesRef = useRef<HTMLDivElement>(null);
 
   const scrollToRules = () => {
     rulesRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    const getBalance = async () => {
+      if (publicKey) {
+        try {
+          const balance = await connection.getBalance(publicKey);
+          setWalletBalance(balance / LAMPORTS_PER_SOL);
+        } catch (error) {
+          console.error('Error fetching balance:', error);
+        }
+      }
+    };
+
+    getBalance();
+    const intervalId = setInterval(getBalance, 20000);
+
+    return () => clearInterval(intervalId);
+  }, [connection, publicKey]);
 
   useEffect(() => {
     if (isDrawing) {
@@ -75,6 +98,11 @@ const GamePage: React.FC = () => {
   };
 
   const handleBetConfirm = useCallback((newBet: number, newRisk: number) => {
+    if (!walletBalance || newBet > walletBalance) {
+      // Show error toast or message
+      return;
+    }
+    
     setShowBettingModal(false);
     setIsDrawing(true);
     setBet(newBet);
@@ -90,7 +118,7 @@ const GamePage: React.FC = () => {
       setHandResult(result);
       setBalance(prev => prev + winnings);
     }, 5000);
-  }, []);
+  }, [walletBalance]);
 
   const handleBack = useCallback(() => {
     setCurrentHand([]);
@@ -145,8 +173,7 @@ const GamePage: React.FC = () => {
                     Place Your Bet & Play Now
                     <div className="absolute top-0 right-0 -mt-2 -mr-2">
                       <span className="relative flex h-4 w-4">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-4 w-4 bg-secondary"></span>
+                        <span className="animate-ping absolute inline-flex status status-error size-3"></span>
                       </span>
                     </div>
                   </button>
@@ -188,8 +215,17 @@ const GamePage: React.FC = () => {
                 <Icon name="wallet" className="text-3xl" />
               </div>
               <div className="stat-title">Your Balance</div>
-              <div className="stat-value text-primary">${balance}</div>
-              <div className="stat-desc">Ready to bet</div>
+              {publicKey ? (
+                <>
+                  <div className="stat-value text-primary">{walletBalance?.toFixed(2) || '0'} SOL</div>
+                  <div className="stat-desc">Ready to bet</div>
+                </>
+              ) : (
+                <>
+                  <div className="stat-value text-error">Not Connected</div>
+                  <div className="stat-desc">Connect wallet to play</div>
+                </>
+              )}
             </div>
 
             <div className="stat">
