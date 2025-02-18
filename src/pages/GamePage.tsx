@@ -26,6 +26,7 @@ const GamePage: React.FC = () => {
     { name: 'Player2', hand: 'Four of a Kind', amount: 800 },
     { name: 'Player3', hand: 'Straight Flush', amount: 1200 },
   ]);
+  const [isRulesOpen, setIsRulesOpen] = useState(true);
 
   const rulesRef = useRef<HTMLDivElement>(null);
 
@@ -293,7 +294,11 @@ const GamePage: React.FC = () => {
           {/* Game Rules Collapse */}
           <div ref={rulesRef} className="bg-base-200 rounded-xl overflow-hidden">
             <div tabIndex={0} className="collapse">
-              <input type="checkbox" checked={true} />
+              <input 
+                type="checkbox" 
+                checked={isRulesOpen}
+                onChange={(e) => setIsRulesOpen(e.target.checked)}
+              />
               <div className="collapse-title p-6 flex items-center gap-3 text-xl font-bold">
                 <Icon name="book" className="text-primary text-2xl" />
                 How to Play & Rules
