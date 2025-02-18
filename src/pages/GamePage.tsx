@@ -562,7 +562,7 @@ const GamePage: React.FC = () => {
                     <div className="space-y-4">
                       <div className="flex items-center justify-center gap-3">
                         <span className='text-4xl'>😥</span>
-                        <span className="text-3xl font-bold text-error">
+                        <span className="text-3xl text-start font-bold text-error">
                           Better luck next time!
                         </span>
                       </div>
@@ -606,10 +606,10 @@ const GamePage: React.FC = () => {
 
             {/* Action Buttons */}
             <div className="space-y-6 text-center animate-slideUp">
-              <div className="flex flex-col gap-4 justify-center">
+              <div className="flex flex-col gap-4 justify-center items-center">
                 <button
                   onClick={handleStartGame}
-                  className="btn btn-primary btn-lg gap-3 px-8"
+                  className="btn btn-primary btn-lg gap-3 px-8  w-full md:w-sm"
                 >
                   <Icon name="refresh" className="text-2xl" />
                   Try Your Luck Again
@@ -617,7 +617,7 @@ const GamePage: React.FC = () => {
 
                 <button
                   onClick={handleBack}
-                  className="btn btn-outline btn-lg gap-3 px-8"
+                  className="btn btn-outline btn-lg gap-3 px-8  w-full md:w-sm"
                 >
                   <Icon name="backSquare" className="text-2xl" />
                   Back
@@ -625,7 +625,7 @@ const GamePage: React.FC = () => {
 
               </div>
 
-              <div className="stats bg-base-200 shadow">
+              <div className="stats-vertical md:stats bg-base-200 shadow">
                 <div className="stat">
                   <div className="stat-figure text-primary">
                     <Icon name="wallet" className="text-3xl" />
