@@ -1,8 +1,9 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BettingModal from '../components/BettingModal';
-import { Card, HandResult } from '../types/poker';
-import { PokerGame } from '../services/pokerGame';
 import Icon from '../components/icon/icon.component';
+import { PokerGame } from '../services/pokerGame';
+import { Card, HandResult } from '../types/poker';
 
 const game = new PokerGame();
 
@@ -11,11 +12,12 @@ interface ShufflingCard extends Card {
 }
 
 const GamePage: React.FC = () => {
+  const navigate = useNavigate();
   const [showBettingModal, setShowBettingModal] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentHand, setCurrentHand] = useState<Card[]>([]);
   const [handResult, setHandResult] = useState<HandResult | null>(null);
-  const [balance, setBalance] = useState(1000); 
+  const [balance, setBalance] = useState(1000);
   const [bet, setBet] = useState(10);
   const [risk, setRisk] = useState(1.0);
   const [shufflingCards, setShufflingCards] = useState<ShufflingCard[]>([]);
@@ -89,12 +91,31 @@ const GamePage: React.FC = () => {
     }, 5000);
   }, []);
 
+  const handleBack = useCallback(() => {
+    setCurrentHand([]);
+    setHandResult(null);
+    setShufflingCards([]);
+    setIsDrawing(false);
+  }, []);
+
+  const goToHomePage = () => {
+    navigate('/');
+  };
+
   const renderReadyToPlay = () => {
     return (
       <div className="min-h-[calc(100vh-5rem)] flex flex-col justify-start p-8 bg-base-100">
         <div className="w-full max-w-6xl space-y-12">
           {/* Hero Section with CTA */}
           <div className="relative py-16 px-4 rounded-3xl overflow-hidden">
+            {/* Back Button */}
+            <button 
+              onClick={goToHomePage}
+              className="absolute rounded-2xl btn-soft z-50 left-6 top-6 btn btn-square backdrop-blur-sm hover:bg-base-200/80 transition-all"
+            >
+              <Icon name="arrowLeft" className="text-2xl" />
+            </button>
+
             {/* Background Effects */}
             <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10"></div>
             <div className="absolute inset-0 bg-[url('/assets/pattern.png')] opacity-5"></div>
@@ -169,7 +190,7 @@ const GamePage: React.FC = () => {
               <div className="stat-value text-primary">${balance}</div>
               <div className="stat-desc">Ready to bet</div>
             </div>
-            
+
             <div className="stat">
               <div className="stat-figure text-secondary">
                 <Icon name="cup" className="text-3xl" />
@@ -178,7 +199,7 @@ const GamePage: React.FC = () => {
               <div className="stat-value text-secondary">50x</div>
               <div className="stat-desc">Royal Flush</div>
             </div>
-            
+
             <div className="stat">
               <div className="stat-figure text-accent">
                 <Icon name="game" className="text-3xl" />
@@ -272,7 +293,7 @@ const GamePage: React.FC = () => {
           {/* Game Rules Collapse */}
           <div ref={rulesRef} className="bg-base-200 rounded-xl overflow-hidden">
             <div tabIndex={0} className="collapse">
-              <input type="checkbox" /> 
+              <input type="checkbox" checked={true} />
               <div className="collapse-title p-6 flex items-center gap-3 text-xl font-bold">
                 <Icon name="book" className="text-primary text-2xl" />
                 How to Play & Rules
@@ -394,11 +415,6 @@ const GamePage: React.FC = () => {
     <div className="min-h-[calc(100vh-5rem)] flex flex-col">
       <div className="w-full max-w-6xl mx-auto px-4 flex-1 flex flex-col">
         {/* Balance Header */}
-        {!isDrawing && (
-          <div className="text-right mb-4">
-            <p className="text-lg">Balance: <span className="font-bold text-green-600">${balance}</span></p>
-          </div>
-        )}
 
         {/* Ready to Play */}
         {!currentHand.length && !isDrawing && renderReadyToPlay()}
@@ -409,13 +425,13 @@ const GamePage: React.FC = () => {
             {/* Background Cards */}
             <div className="absolute inset-0 overflow-hidden">
               <div className="absolute w-32 h-44 top-20 left-20 rotate-[-15deg] opacity-20 animate-float-1">
-                <img src="/assets/card-back.png" className="w-full h-full object-cover rounded-xl" />
+                <img src="/assets/Spades-01.png" className="w-full h-full object-cover rounded-xl" />
               </div>
               <div className="absolute w-32 h-44 bottom-40 right-20 rotate-[25deg] opacity-20 animate-float-2">
-                <img src="/assets/card-back.png" className="w-full h-full object-cover rounded-xl" />
+                <img src="/assets/Hearts-01.png" className="w-full h-full object-cover rounded-xl" />
               </div>
               <div className="absolute w-32 h-44 top-40 right-40 rotate-[-35deg] opacity-20 animate-float-3">
-                <img src="/assets/card-back.png" className="w-full h-full object-cover rounded-xl" />
+                <img src="/assets/Clubs-01.png" className="w-full h-full object-cover rounded-xl" />
               </div>
             </div>
 
@@ -424,7 +440,7 @@ const GamePage: React.FC = () => {
               {/* Title Section */}
               <div className="text-center mb-12">
                 <div className="inline-flex items-center gap-3 px-8 py-4 bg-base-200/50 rounded-2xl backdrop-blur-sm">
-                  <span className="text-4xl">🎲</span>
+
                   <h2 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-pulse">
                     Shuffling Your Cards
                   </h2>
@@ -471,22 +487,25 @@ const GamePage: React.FC = () => {
 
               {/* Status Section */}
               <div className="text-center space-y-8">
-                <div className="inline-flex items-center gap-3 px-6 py-3 bg-base-200/50 backdrop-blur-sm rounded-full">
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                  </span>
-                  <p className="text-lg font-medium bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                    Finding your lucky combination...
-                  </p>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="w-64 mx-auto">
-                  <div className="h-1 w-full bg-base-200/50 rounded-full overflow-hidden backdrop-blur-sm">
-                    <div className="h-full w-full bg-gradient-to-r from-primary to-secondary rounded-full animate-progressLine"></div>
+                <div className="flex flex-col items-center gap-3 px-6 py-3 bg-base-200/50 backdrop-blur-sm rounded-full">
+                  <div className='flex items-center gap-3'>
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                    </span>
+                    <p className="text-lg font-medium bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                      Finding your lucky combination...
+                    </p>
+                  </div>
+                  {/* Progress Bar */}
+                  <div className="w-64 mx-auto">
+                    {/* <span className="text-4xl">🎲</span> */}
+                    <div className="h-1 w-full bg-base-200/50 rounded-full overflow-hidden backdrop-blur-sm">
+                      <div className="h-full w-full bg-gradient-to-r from-primary to-secondary rounded-full animate-progressLine"></div>
+                    </div>
                   </div>
                 </div>
+
               </div>
             </div>
           </div>
@@ -515,11 +534,11 @@ const GamePage: React.FC = () => {
                   <h2 className="text-5xl font-bold bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
                     {handResult.type}
                   </h2>
-                  
+
                   {handResult.multiplier > 0 ? (
                     <div className="space-y-4">
                       <div className="flex items-center justify-center gap-3">
-                      <span className='text-4xl'>🤩</span>
+                        <span className='text-4xl'>🤩</span>
                         <span className="text-3xl font-bold text-success">
                           You Won ${(handResult.multiplier * bet * (1 + risk)).toFixed(2)}!
                         </span>
@@ -587,7 +606,7 @@ const GamePage: React.FC = () => {
 
             {/* Action Buttons */}
             <div className="space-y-6 text-center animate-slideUp">
-              <div className="flex gap-4 justify-center">
+              <div className="flex flex-col gap-4 justify-center">
                 <button
                   onClick={handleStartGame}
                   className="btn btn-primary btn-lg gap-3 px-8"
@@ -595,6 +614,15 @@ const GamePage: React.FC = () => {
                   <Icon name="refresh" className="text-2xl" />
                   Try Your Luck Again
                 </button>
+
+                <button
+                  onClick={handleBack}
+                  className="btn btn-outline btn-lg gap-3 px-8"
+                >
+                  <Icon name="backSquare" className="text-2xl" />
+                  Back
+                </button>
+
               </div>
 
               <div className="stats bg-base-200 shadow">

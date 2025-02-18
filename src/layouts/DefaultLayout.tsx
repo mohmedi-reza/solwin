@@ -4,33 +4,83 @@ import Icon from '../components/icon/icon.component';
 
 const DefaultLayout: React.FC = () => {
     return (
-        <div className="min-h-screen flex flex-col">
-            <nav className="navbar bg-base-100/90 py-2 print:hidden text-base-content sticky top-0 z-30 flex h-16 w-full justify-between backdrop-blur transition-shadow duration-100 [transform:translate3d(0,0,0)] shadow-xs">
-                <div className='flex justify-between w-8/10 mx-auto'>
-                    <div className="btn btn-ghost">
-                        <button className="btn-square bg-primary rounded-2xl">
-                            <Icon name="game" className="text-4xl text-base-100" />
+        <div className="min-h-screen bg-base-100">
+            {/* Header */}
+            <header className="sticky top-0 z-50 w-full bg-base-100/80 backdrop-blur-lg border-b border-base-content/10">
+                <div className="container mx-auto px-4 h-16">
+                    <div className="flex items-center justify-between h-full">
+                        {/* Logo */}
+                        <div className="flex items-center gap-2">
+                            <Icon name="game" className="text-2xl text-primary" />
+                            <span className="font-bold text-xl">RocketBet</span>
+                        </div>
+
+                        {/* Navigation - Hide on mobile */}
+                        <nav className="hidden md:flex items-center gap-6">
+                            <a href="/" className="nav-link">Games</a>
+                            <a href="/history" className="nav-link">History</a>
+                            <a href="/me" className="nav-link">Profile</a>
+                        </nav>
+
+                        {/* Mobile Menu Button */}
+                        <button className="btn btn-ghost btn-circle md:hidden">
+                            <Icon name="menu" className="text-2xl" />
                         </button>
-                        <div className="text-start">
-                            <p className="text-xl font-bold text-white">RocketBet</p>
-                            <p className="capitalize text-xs font-extralight text-gray-500">
-                                BETTING WEBSITE
-                            </p>
+
+                        {/* Actions - Responsive */}
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            <div className="hidden sm:flex items-center gap-1.5 text-base-content/80">
+                                <Icon name="wallet" className="text-lg text-primary" />
+                                <span>$1,000</span>
+                            </div>
+                            
+                            <button className="btn btn-primary btn-sm sm:btn-md">
+                                <Icon name="wallet" className="text-lg sm:hidden" />
+                                <span className="hidden sm:inline">Connect Wallet</span>
+                            </button>
                         </div>
                     </div>
-                    <div className="space-x-3">
-                        <button className="btn btn-primary">
-                            <Icon name={"wallet"} className="text-2xl" /> Connect Wallet
-                        </button>
-                        <button className="btn btn-outline btn-primary">Sign in</button>
-                    </div>
                 </div>
-            </nav>
+            </header>
 
-            <main className="flex-grow max-w-8/10 mx-auto">
+            {/* Mobile Navigation Menu */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-base-100 border-t border-base-content/10">
+                <div className="flex justify-around p-2">
+                    <a href="/" className="mobile-nav-link">
+                        <Icon name="game" className="text-xl" />
+                        <span className="text-xs">Games</span>
+                    </a>
+                    <a href="/history" className="mobile-nav-link">
+                        <Icon name="history" className="text-xl" />
+                        <span className="text-xs">History</span>
+                    </a>
+                    <a href="/me" className="mobile-nav-link">
+                        <Icon name="user" className="text-xl" />
+                        <span className="text-xs">Profile</span>
+                    </a>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <main className="container mx-auto px-4 py-4 sm:py-6 min-h-[calc(100vh-4rem)]">
                 <Outlet />
             </main>
 
+            {/* Footer - Hide on mobile due to bottom navigation */}
+            <footer className="hidden md:block bg-base-200 border-t border-base-content/10">
+                <div className="container mx-auto px-4 py-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div className="text-sm text-base-content/60">
+                            © 2024 RocketBet. All rights reserved.
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                            <a href="#" className="hover:text-primary transition-colors">Terms</a>
+                            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
+                            <a href="#" className="hover:text-primary transition-colors">Support</a>
+                        </div>
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 };

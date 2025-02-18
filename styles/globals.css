@@ -1,0 +1,22 @@
+@layer components {
+  .nav-link {
+    @apply relative py-1 text-base-content/70 hover:text-primary transition-colors;
+  }
+
+  .nav-link.active {
+    @apply text-primary;
+  }
+
+  .nav-link.active::after {
+    content: '';
+    @apply absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full;
+  }
+
+  .mobile-nav-link {
+    @apply flex flex-col items-center gap-1 p-2 text-base-content/70 hover:text-primary transition-colors;
+  }
+
+  .mobile-nav-link.active {
+    @apply text-primary;
+  }
+} 
