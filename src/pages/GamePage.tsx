@@ -104,31 +104,31 @@ const GamePage: React.FC = () => {
 
   const renderReadyToPlay = () => {
     return (
-      <div className="min-h-[calc(100vh-5rem)] flex flex-col justify-start p-8 bg-base-100">
-        <div className="w-full max-w-6xl space-y-12">
+      <div className=" min-h-[calc(100vh-5rem)] flex flex-col justify-start  bg-base-100">
+        <div className="relative w-full max-w-6xl space-y-12">
           {/* Hero Section with CTA */}
-          <div className="relative py-16 px-4 rounded-3xl overflow-hidden">
+          <div className="relative py-8 sm:py-12 md:py-16 px-4 sm:px-6 md:px-8 rounded-3xl overflow-hidden">
             {/* Back Button */}
             <button 
               onClick={goToHomePage}
-              className="absolute rounded-2xl btn-soft z-50 left-6 top-6 btn btn-square backdrop-blur-sm hover:bg-base-200/80 transition-all"
+              className="absolute rounded-2xl btn-soft z-50 left-4 sm:left-6 top-4 sm:top-6 btn btn-square backdrop-blur-sm hover:bg-base-200/80 transition-all"
             >
-              <Icon name="arrowLeft" className="text-2xl" />
+              <Icon name="arrowLeft" className="text-xl sm:text-2xl" />
             </button>
 
             {/* Background Effects */}
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10"></div>
-            <div className="absolute inset-0 bg-[url('/assets/pattern.png')] opacity-5"></div>
-            <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+            <div className="absolute inset-0 z-0 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10"></div>
+            <div className="absolute inset-0 z-0 bg-[url('/assets/pattern.png')] opacity-5"></div>
+            <div className="absolute -top-24 -right-24 z-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute -bottom-24 -left-24 z-0 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
 
-            <div className="relative text-center space-y-8">
-              <h1 className="text-6xl font-bold">
+            <div className="relative z-10 text-center space-y-4 sm:space-y-6 md:space-y-8">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mt-16">
                 <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                   Ready to Test Your Luck?
                 </span>
               </h1>
-              <p className="text-xl text-base-content/60 max-w-2xl mx-auto">
+              <p className="text-lg sm:text-xl text-base-content/60 max-w-2xl mx-auto">
                 Place your bet and try to win big with the best poker hands!
               </p>
 
@@ -138,7 +138,7 @@ const GamePage: React.FC = () => {
                   <div className="absolute -inset-1 bg-gradient-to-r from-primary via-secondary to-primary rounded-2xl blur-lg group-hover:blur-xl transition-all"></div>
                   <button
                     onClick={handleStartGame}
-                    className="relative btn btn-primary btn-lg text-xl px-12 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
+                    className="relative text-nowrap btn btn-primary btn-lg text-xl px-4 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
                   >
                     <Icon name="game" className="text-3xl" />
                     Place Your Bet & Play Now
@@ -181,7 +181,7 @@ const GamePage: React.FC = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="stats stats-vertical lg:stats-horizontal shadow-lg bg-base-200 w-full">
+          <div className="stats stats-vertical sm:stats-horizontal shadow-lg bg-base-200 w-full overflow-x-auto">
             <div className="stat">
               <div className="stat-figure text-primary">
                 <Icon name="wallet" className="text-3xl" />
@@ -222,9 +222,9 @@ const GamePage: React.FC = () => {
           </div>
 
           {/* Winning Hands Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="card bg-base-200 shadow-lg hover:shadow-xl transition-all group">
-              <div className="card-body p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="card bg-base-200 shadow-lg hover:shadow-xl transition-all">
+              <div className="card-body p-3 sm:p-4">
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Icon name="information" className="text-base-content/40" />
                 </div>
@@ -242,21 +242,21 @@ const GamePage: React.FC = () => {
               </div>
             </div>
             <div className="card bg-base-200 shadow-lg hover:shadow-xl transition-all">
-              <div className="card-body p-4">
+              <div className="card-body p-3 sm:p-4">
                 <h3 className="card-title text-lg">Straight Flush</h3>
                 <div className="text-2xl font-bold text-primary">10x</div>
                 <p className="text-base-content/60 text-sm">Five consecutive cards, same suit</p>
               </div>
             </div>
             <div className="card bg-base-200 shadow-lg hover:shadow-xl transition-all">
-              <div className="card-body p-4">
+              <div className="card-body p-3 sm:p-4">
                 <h3 className="card-title text-lg">Four of a Kind</h3>
                 <div className="text-2xl font-bold text-primary">5x</div>
                 <p className="text-base-content/60 text-sm">Four cards of same rank</p>
               </div>
             </div>
             <div className="card bg-base-200 shadow-lg hover:shadow-xl transition-all">
-              <div className="card-body p-4">
+              <div className="card-body p-3 sm:p-4">
                 <h3 className="card-title text-lg">Full House</h3>
                 <div className="text-2xl font-bold text-primary">4x</div>
                 <p className="text-base-content/60 text-sm">Three of a kind with a pair</p>
@@ -413,7 +413,7 @@ const GamePage: React.FC = () => {
 
   return (
     <div className="min-h-[calc(100vh-5rem)] flex flex-col">
-      <div className="w-full max-w-6xl mx-auto px-4 flex-1 flex flex-col">
+      <div className="w-full max-w-6xl mx-auto  flex-1 flex flex-col">
         {/* Balance Header */}
 
         {/* Ready to Play */}
@@ -513,10 +513,10 @@ const GamePage: React.FC = () => {
 
         {/* Final Hand Display */}
         {currentHand.length > 0 && !isDrawing && (
-          <div className="flex-1 flex flex-col items-center justify-center space-y-12 p-8">
+          <div className="flex-1 flex flex-col items-center justify-center space-y-12 ">
             {/* Result Hero Section */}
             {handResult && (
-              <div className="relative w-full max-w-4xl mx-auto bg-base-200 rounded-3xl p-8 overflow-hidden">
+              <div className="relative w-full max-w-4xl mx-auto bg-base-200 rounded-3xl p-2 py-4 md:p-8 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10"></div>
                 {handResult.multiplier > 0 ? (
                   <>
@@ -578,11 +578,11 @@ const GamePage: React.FC = () => {
             {/* Cards Display */}
             <div className="relative w-full max-w-5xl mx-auto">
               <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-secondary/5 rounded-3xl blur-3xl"></div>
-              <div className="relative flex gap-4 justify-center flex-wrap py-8">
+              <div className="relative flex flex-wrap gap-2 sm:gap-4 justify-center py-4 sm:py-8">
                 {currentHand.map((card, index) => (
                   <div
                     key={index}
-                    className="relative group"
+                    className="w-5 sm:w-36 -translate-x-12 -translate-y-12 md:-translate-x-0 md:-translate-y-0 md:w-40 h-44 sm:h-48 md:h-56 relative group"
                     style={{
                       transform: `rotate(${(index - 2) * 5}deg)`,
                       transition: 'all 0.3s ease',

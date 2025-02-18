@@ -87,9 +87,9 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <div className="container mx-auto px-4 max-w-7xl">
+      <div className="container mx-auto">
         {/* Hero Banner */}
-        <div className="relative mt-6 h-auto sm:h-[180px] py-6 sm:py-0 bg-gradient-to-r from-base-200/80 via-base-100/40 to-base-200/80 backdrop-blur-sm rounded-3xl mb-8 border border-base-content/20 shadow-[0_0_15px_rgba(var(--primary),0.15)] hover:shadow-[0_0_20px_rgba(var(--primary),0.2)] transition-shadow overflow-hidden">
+        <div className="relative mt-4 sm:mt-6 lg:mt-8 h-auto sm:h-[180px] py-4 sm:py-6 lg:py-0 bg-gradient-to-r from-base-200/80 via-base-100/40 to-base-200/80 backdrop-blur-sm rounded-3xl mb-8 border border-base-content/20 shadow-[0_0_15px_rgba(var(--primary),0.15)] hover:shadow-[0_0_20px_rgba(var(--primary),0.2)] transition-shadow overflow-hidden">
           {/* Background Effects */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5"></div>
 
@@ -105,11 +105,11 @@ const HomePage: React.FC = () => {
           </div>
 
           {/* Content */}
-          <div className="relative z-10 h-full flex items-center px-4 sm:px-8">
-            <div className="flex-1 flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-0">
+          <div className="relative z-10 h-full flex items-center px-3 sm:px-6 lg:px-8">
+            <div className="flex-1 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 lg:gap-8">
               {/* Left Side */}
-              <div className="space-y-3 max-w-xl text-center sm:text-left">
-                <h1 className="text-3xl sm:text-4xl font-bold drop-shadow-sm">
+              <div className="space-y-2 sm:space-y-3 lg:space-y-4 max-w-xl text-center sm:text-left">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold drop-shadow-sm">
                   <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-gradient">
                     RocketBet
                   </span>
@@ -132,7 +132,7 @@ const HomePage: React.FC = () => {
               </div>
 
               {/* Right Side Stats - Stack on mobile */}
-              <div className="flex flex-col items-center sm:items-end gap-4 w-full sm:w-auto">
+              <div className="flex flex-col items-center sm:items-end gap-3 sm:gap-4 w-full sm:w-auto">
                 <div className="flex items-center gap-4 text-sm w-full sm:w-auto justify-center sm:justify-end">
                   <div className="flex items-center gap-1.5 text-base-content/80 font-medium">
                     <Icon name="wallet" className="text-lg text-primary drop-shadow" />
@@ -150,18 +150,18 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* Game List Section */}
-        <div className="w-full space-y-5">
+        <div className="w-full space-y-4 sm:space-y-5 lg:space-y-6 mt-6 sm:mt-8 lg:mt-10">
           {/* Header and Filter Section */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="text-start">
-              <h1 className="text-3xl font-extrabold">Game List</h1>
-              <span className="text-base-content/70">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+            <div className="text-start w-full sm:w-auto">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold">Game List</h1>
+              <span className="text-sm sm:text-base text-base-content/70">
                 Cupidatat ut quis labore elit in voluptate non mollit
               </span>
             </div>
 
             {/* Filter Buttons */}
-            <div className="flex flex-wrap gap-2 min-w-[280px]">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-start sm:justify-end">
               {["All", "Active", "Trend", "Popular"].map((filter) => (
                 <button
                   key={filter}
@@ -177,16 +177,16 @@ const HomePage: React.FC = () => {
           </div>
 
           {/* Game Cards Grid - Better responsive columns */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {filteredCards.map((card) => (
-              <div key={card.id} className="card bg-base-200 hover:shadow-xl transition-all">
+              <div key={card.id} className="card backdrop-blur-md rounded-2xl sm:rounded-3xl bg-base-200 hover:shadow-xl transition-all">
                 {/* Game Image - Adjust height for mobile */}
-                <div className="relative h-40 sm:h-48">
+                <div className="relative h-36 sm:h-40 lg:h-48">
                   <div className="absolute inset-0 bg-gradient-to-t from-base-200 to-transparent"></div>
                   <img 
                     src={card.image} 
                     alt={card.title}
-                    className="w-100 h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                    className="w-100 rounded-2xl  h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                   />
                   {card.status === "Active" && (
                     <div className="absolute top-4 right-4">
@@ -199,9 +199,9 @@ const HomePage: React.FC = () => {
                 </div>
 
                 {/* Content - Better padding on mobile */}
-                <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-2xl font-bold">{card.title}</h3>
+                <div className="h-full p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 lg:space-y-4">
+                  <div className="flex justify-between items-start gap-2">
+                    <h3 className="text-xl sm:text-2xl font-bold">{card.title}</h3>
                     <span className={`badge ${
                       card.status === "Active" ? "badge-success" : 
                       card.status === "Trend" ? "badge-secondary" : 
@@ -211,10 +211,12 @@ const HomePage: React.FC = () => {
                     </span>
                   </div>
 
-                  <p className="text-base-content/70">{card.description}</p>
+                  <p className="text-sm sm:text-base text-base-content/70 line-height-3">
+                    {card.description}
+                  </p>
 
                   {/* Stats - Wrap on small screens */}
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4 text-xs sm:text-sm">
                     <div className="flex items-center gap-1">
                       <Icon name="wallet" className="text-primary" />
                       <span>${card.stats.minBet}</span>
@@ -235,16 +237,12 @@ const HomePage: React.FC = () => {
                   <button
                     onClick={() => navigate(`/game?id=${card.id}`)}
                     disabled={card.status !== "Active"}
-                    className={`w-full btn ${
-                      card.status === "Active" 
-                        ? "btn-primary" 
-                        : "btn-disabled"
-                    } gap-2`}
+                    className="w-full relative btn btn-primary py-3 btn-sm sm:btn-md lg:btn-lg"
                   >
                     <Icon name="game" />
                     {card.status === "Active" ? "Play Now" : "Coming Soon"}
                     {card.status === "Active" && (
-                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-secondary rounded-full animate-ping"></div>
+                      <div className="absolute -top-1 -right-1 w-2 h-2 status status-error rounded-full animate-ping"></div>
                     )}
                   </button>
                 </div>

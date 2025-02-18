@@ -50,8 +50,8 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-base-100 rounded-2xl p-8 w-full max-w-md space-y-6 shadow-2xl animate-fadeIn">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-base-100 rounded-2xl p-3 md:p-8 w-full max-w-md space-y-3 md:space-y-6 shadow-2xl animate-fadeIn">
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Place Your Bet
@@ -169,17 +169,18 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm,
           </div>
         )}
 
-        <div className="flex gap-4 pt-4">
+        <div className="flex gap-4 pt-4 flex-col md:flex-row">
           <button
             onClick={onClose}
-            className="btn btn-outline flex-1 gap-2"
+            className="btn btn-outline flex-1 gap-2 py-3 "
           >
             <Icon name="closeCircle" className="text-xl" />
             Cancel
           </button>
+
           <button
             onClick={handleConfirm}
-            className="btn btn-primary flex-1 gap-2"
+            className="btn btn-primary flex-1 gap-2 py-3 "
           >
             <Icon name="game" className="text-xl" />
             Place Bet & Play

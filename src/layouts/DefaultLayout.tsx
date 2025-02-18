@@ -22,17 +22,8 @@ const DefaultLayout: React.FC = () => {
                             <a href="/me" className="nav-link">Profile</a>
                         </nav>
 
-                        {/* Mobile Menu Button */}
-                        <button className="btn btn-ghost btn-circle md:hidden">
-                            <Icon name="menu" className="text-2xl" />
-                        </button>
-
                         {/* Actions - Responsive */}
                         <div className="flex items-center gap-2 sm:gap-4">
-                            <div className="hidden sm:flex items-center gap-1.5 text-base-content/80">
-                                <Icon name="wallet" className="text-lg text-primary" />
-                                <span>$1,000</span>
-                            </div>
                             
                             <button className="btn btn-primary btn-sm sm:btn-md">
                                 <Icon name="wallet" className="text-lg sm:hidden" />
@@ -45,24 +36,24 @@ const DefaultLayout: React.FC = () => {
 
             {/* Mobile Navigation Menu */}
             <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-base-100 border-t border-base-content/10">
-                <div className="flex justify-around p-2">
-                    <a href="/" className="mobile-nav-link">
+                <div className="flex justify-around p-2 py-4">
+                    <a href="/" className="mobile-nav-link flex items-center gap-2 cursor-pointer aria-pressed:bg-primary">
                         <Icon name="game" className="text-xl" />
-                        <span className="text-xs">Games</span>
+                        <span className="text-xs text-nowrap">Games</span>
                     </a>
-                    <a href="/history" className="mobile-nav-link">
+                    <a href="/history" className="mobile-nav-link flex items-center gap-2 cursor-pointer aria-pressed:bg-primary">
                         <Icon name="history" className="text-xl" />
-                        <span className="text-xs">History</span>
+                        <span className="text-xs text-nowrap">History</span>
                     </a>
-                    <a href="/me" className="mobile-nav-link">
+                    <a href="/me" className="mobile-nav-link flex items-center gap-2 cursor-pointer aria-pressed:bg-primary">
                         <Icon name="user" className="text-xl" />
-                        <span className="text-xs">Profile</span>
+                        <span className="text-xs text-nowrap">Profile</span>
                     </a>
                 </div>
             </div>
 
             {/* Main Content */}
-            <main className="container mx-auto px-4 py-4 sm:py-6 min-h-[calc(100vh-4rem)]">
+            <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-6 lg:py-8 min-h-[calc(100vh-4rem)]">
                 <Outlet />
             </main>
 
