@@ -1,8 +1,53 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Icon from '../components/icon/icon.component';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 const DefaultLayout: React.FC = () => {
+    const { wallet, disconnect, publicKey } = useWallet();
+    const { connection } = useConnection();
+    const { setVisible } = useWalletModal();
+    const [copied, setCopied] = useState(false);
+    const [balance, setBalance] = useState<number | null>(null);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const getBalance = async () => {
+            if (publicKey) {
+                try {
+                    const balance = await connection.getBalance(publicKey);
+                    if (isMounted) {
+                        setBalance(balance / LAMPORTS_PER_SOL);
+                    }
+                } catch (error) {
+                    console.error('Error fetching balance:', error);
+                }
+            } else {
+                setBalance(null);
+            }
+        };
+
+        getBalance();
+        // Optional: Setup balance auto-refresh
+        const intervalId = setInterval(getBalance, 20000);
+
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+        };
+    }, [connection, publicKey]);
+
+    const copyAddress = async () => {
+        if (publicKey) {
+            await navigator.clipboard.writeText(publicKey.toBase58());
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-base-100">
             {/* Header */}
@@ -24,11 +69,56 @@ const DefaultLayout: React.FC = () => {
 
                         {/* Actions - Responsive */}
                         <div className="flex items-center gap-2 sm:gap-4">
-                            
-                            <button className="btn btn-primary btn-sm sm:btn-md">
-                                <Icon name="wallet" className="text-lg sm:hidden" />
-                                <span className="hidden sm:inline">Connect Wallet</span>
-                            </button>
+                            {balance !== null && (
+                                <div className="hidden sm:flex items-center gap-2 text-base-content/70">
+                                    <Icon name="coin" className="text-primary text-lg" />
+                                    <span>{balance.toFixed(2)} SOL</span>
+                                </div>
+                            )}
+                            <div className="dropdown dropdown-end">
+                                <button
+                                    onClick={() => !wallet && setVisible(true)}
+                                    className="btn btn-primary btn-sm sm:btn-md normal-case"
+                                >
+                                    {!wallet ? (
+                                        <>
+                                            <Icon name="wallet" className="text-lg sm:hidden" />
+                                            <span className="hidden sm:inline">Connect Wallet</span>
+                                        </>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <Icon name="wallet" className="text-lg" />
+                                            <span className="hidden sm:inline">
+                                                {publicKey?.toBase58().slice(0, 4)}...
+                                                {publicKey?.toBase58().slice(-4)}
+                                            </span>
+                                        </div>
+                                    )}
+                                </button>
+
+                                {wallet && (
+                                    <ul className="dropdown-content menu p-2 mt-2 shadow-lg bg-base-200 rounded-box w-52">
+                                        <li>
+                                            <button onClick={copyAddress} className="flex items-center gap-2">
+                                                <Icon name="copy" className="text-lg" />
+                                                {copied ? 'Copied' : 'Copy Address'}
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button onClick={() => setVisible(true)} className="flex items-center gap-2">
+                                                <Icon name="refresh" className="text-lg" />
+                                                Change Wallet
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button onClick={disconnect} className="flex items-center gap-2 text-error">
+                                                <Icon name="logout" className="text-lg" />
+                                                Disconnect
+                                            </button>
+                                        </li>
+                                    </ul>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -18,3 +18,8 @@
 ::-webkit-scrollbar {
   display: none;
 }
+
+.wallet-adapter-button-trigger{
+  background-color: unset !important;
+}
+
