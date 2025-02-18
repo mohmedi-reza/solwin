@@ -71,23 +71,23 @@ const DefaultLayout: React.FC = () => {
 
                         {/* Navigation - Hide on mobile */}
                         <nav className="hidden md:flex items-center gap-6">
-                            <Link 
-                                to="/" 
-                                className={`btn btn-ghost gap-2 ${isActiveRoute('/') ? 'btn-active text-primary' : 'text-base-content/70'}`}
+                            <Link
+                                to="/"
+                                className={`nav-link ${isActiveRoute('/') ? 'active' : ''}`}
                             >
                                 <Icon name="game" className="text-lg" />
                                 <span>Games</span>
                             </Link>
-                            <Link 
-                                to="/history" 
-                                className={`btn btn-ghost gap-2 ${isActiveRoute('/history') ? 'btn-active text-primary' : 'text-base-content/70'}`}
+                            <Link
+                                to="/history"
+                                className={`nav-link ${isActiveRoute('/history') ? 'active' : ''}`}
                             >
                                 <Icon name="history" className="text-lg" />
                                 <span>History</span>
                             </Link>
-                            <Link 
-                                to="/me" 
-                                className={`btn btn-ghost gap-2 ${isActiveRoute('/me') ? 'btn-active text-primary' : 'text-base-content/70'}`}
+                            <Link
+                                to="/me"
+                                className={`nav-link ${isActiveRoute('/me') ? 'active' : ''}`}
                             >
                                 <Icon name="user" className="text-lg" />
                                 <span>Profile</span>
@@ -118,7 +118,7 @@ const DefaultLayout: React.FC = () => {
                                         <div className="flex items-center gap-2">
                                             <Icon name="wallet" className="text-lg" />
                                             <span className="hidden sm:inline">
-                                                <AddressShort address={publicKey?.toBase58()||"-"} />
+                                                <AddressShort address={publicKey?.toBase58() || "-"} />
                                             </span>
                                         </div>
                                     )}
@@ -155,29 +155,23 @@ const DefaultLayout: React.FC = () => {
             {/* Mobile Navigation Menu */}
             <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-base-100 border-t border-base-content/10">
                 <div className="flex justify-around p-2 py-4">
-                    <Link 
-                        to="/" 
-                        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-                            isActiveRoute('/') ? 'bg-primary/10 text-primary' : 'text-base-content/70'
-                        }`}
+                    <Link
+                        to="/"
+                        className={`mobile-nav-link ${isActiveRoute('/') ? 'active' : ''}`}
                     >
                         <Icon name="game" className="text-xl" />
                         <span className="text-xs">Games</span>
                     </Link>
-                    <Link 
-                        to="/history" 
-                        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-                            isActiveRoute('/history') ? 'bg-primary/10 text-primary' : 'text-base-content/70'
-                        }`}
+                    <Link
+                        to="/history"
+                        className={`mobile-nav-link ${isActiveRoute('/history') ? 'active' : ''}`}
                     >
                         <Icon name="history" className="text-xl" />
                         <span className="text-xs">History</span>
                     </Link>
-                    <Link 
-                        to="/me" 
-                        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-                            isActiveRoute('/me') ? 'bg-primary/10 text-primary' : 'text-base-content/70'
-                        }`}
+                    <Link
+                        to="/me"
+                        className={`mobile-nav-link ${isActiveRoute('/me') ? 'active' : ''}`}
                     >
                         <Icon name="user" className="text-xl" />
                         <span className="text-xs">Profile</span>

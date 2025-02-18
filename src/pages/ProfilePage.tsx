@@ -79,14 +79,14 @@ const ProfilePage: React.FC = () => {
       <div className="relative bg-base-200 rounded-3xl p-6 md:p-8 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10"></div>
         <div className="absolute inset-0 bg-[url('/assets/pattern.png')] opacity-5"></div>
-        
+
         <div className="relative flex flex-col md:flex-row gap-6 items-center">
           <div className="w-24 h-24 rounded-full bg-gradient-to-r from-primary to-secondary p-1">
             <div className="w-full h-full rounded-full bg-base-100 flex items-center justify-center">
               <Icon name="user" className="text-4xl text-primary" />
             </div>
           </div>
-          
+
           <div className="text-center md:text-left">
             <span className="text-2xl w-20 font-bold mb-2">
               Player #{publicKey.toBase58().slice(-4)}
@@ -199,9 +199,8 @@ const ProfilePage: React.FC = () => {
                   <td>{game.date}</td>
                   <td>{game.type}</td>
                   <td>
-                    <span className={`badge text-nowrap text-xs ${
-                      game.amount > 0 ? 'badge-success' : 'badge-error'
-                    } gap-1`}>
+                    <span className={`badge text-nowrap text-xs ${game.amount > 0 ? 'badge-success' : 'badge-error'
+                      } gap-1`}>
                       {game.result}
                     </span>
                   </td>
@@ -255,4 +254,3 @@ const ProfilePage: React.FC = () => {
 };
 
 export default ProfilePage;
-  

@@ -20,11 +20,11 @@ interface GameCard {
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const gameCards: GameCard[] = [
-    { 
-      id: 1, 
+    {
+      id: 1,
       title: "Video Poker",
       description: "Test your luck with poker hands and win up to 50x multiplier!",
-      status: "Active", 
+      status: "Active",
       image: "cover-1.png",
       stats: {
         minBet: 10,
@@ -32,11 +32,11 @@ const HomePage: React.FC = () => {
         players: 1205
       }
     },
-    { 
-      id: 2, 
+    {
+      id: 2,
       title: "RocketPlay",
       description: "Crash game with real-time multipliers and instant cashouts",
-      status: "Trend", 
+      status: "Trend",
       image: "cover-2.png",
       stats: {
         minBet: 5,
@@ -44,34 +44,34 @@ const HomePage: React.FC = () => {
         players: 856
       }
     },
-    { 
-      id: 3, 
+    {
+      id: 3,
       title: "SpeedBet",
       description: "Fast-paced betting game with multipliers",
-      status: "Popular", 
+      status: "Popular",
       image: "cover-2.png",
       stats: { minBet: 5, maxWin: "25x", players: 645 }
     },
-    { 
-      id: 4, 
-      title: "MegaJackpot", 
-      status: "Trend", 
+    {
+      id: 4,
+      title: "MegaJackpot",
+      status: "Trend",
       image: "cover-3.png",
       description: "Mega jackpot with progressive multipliers",
       stats: { minBet: 20, maxWin: "200x", players: 432 }
     },
-    { 
-      id: 5, 
-      title: "LuckySpin", 
-      status: "Trend", 
+    {
+      id: 5,
+      title: "LuckySpin",
+      status: "Trend",
       image: "cover-1.png",
       description: "Spin the wheel of fortune",
       stats: { minBet: 1, maxWin: "20x", players: 890 }
     },
-    { 
-      id: 6, 
-      title: "FortuneWheel", 
-      status: "Popular", 
+    {
+      id: 6,
+      title: "FortuneWheel",
+      status: "Popular",
       image: "cover-1.png",
       description: "Classic fortune wheel with bonuses",
       stats: { minBet: 5, maxWin: "15x", players: 567 }
@@ -165,9 +165,8 @@ const HomePage: React.FC = () => {
               {["All", "Active", "Trend", "Popular"].map((filter) => (
                 <button
                   key={filter}
-                  className={`badge badge-lg badge-outline whitespace-nowrap ${
-                    selectedFilter === filter ? "badge-primary" : ""
-                  }`}
+                  className={`badge badge-lg badge-outline whitespace-nowrap ${selectedFilter === filter ? "badge-primary" : ""
+                    }`}
                   onClick={() => setSelectedFilter(filter)}
                 >
                   {filter}
@@ -183,8 +182,8 @@ const HomePage: React.FC = () => {
                 {/* Game Image - Adjust height for mobile */}
                 <div className="relative h-36 sm:h-40 lg:h-48">
                   <div className="absolute inset-0 bg-gradient-to-t from-base-200 to-transparent"></div>
-                  <img 
-                    src={card.image} 
+                  <img
+                    src={card.image}
                     alt={card.title}
                     className="w-100 rounded-2xl  h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                   />
@@ -202,11 +201,10 @@ const HomePage: React.FC = () => {
                 <div className="h-full p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 lg:space-y-4">
                   <div className="flex justify-between items-start gap-2">
                     <h3 className="text-xl sm:text-2xl font-bold">{card.title}</h3>
-                    <span className={`badge ${
-                      card.status === "Active" ? "badge-success" : 
-                      card.status === "Trend" ? "badge-secondary" : 
-                      "badge-accent"
-                    }`}>
+                    <span className={`badge ${card.status === "Active" ? "badge-success" :
+                        card.status === "Trend" ? "badge-secondary" :
+                          "badge-accent"
+                      }`}>
                       {card.status}
                     </span>
                   </div>

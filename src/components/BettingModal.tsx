@@ -123,8 +123,8 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm,
               Bet Amount
             </label>
             <div className="flex gap-2 items-center py-2">
-              <button 
-                onClick={() => setBet(Math.max(10, bet - 10))} 
+              <button
+                onClick={() => setBet(Math.max(10, bet - 10))}
                 className="btn btn-circle btn-sm btn-primary btn-outline"
               >
                 -
@@ -134,9 +134,8 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm,
                   type="number"
                   value={bet}
                   onChange={(e) => setBet(Number(e.target.value))}
-                  className={`input input-bordered w-24 text-center font-bold ${
-                    isInsufficientBalance ? 'input-error border-2' : ''
-                  }`}
+                  className={`input input-bordered w-24 text-center font-bold ${isInsufficientBalance ? 'input-error border-2' : ''
+                    }`}
                   min={10}
                 />
                 {isInsufficientBalance && (
@@ -145,8 +144,8 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm,
                   </div>
                 )}
               </div>
-              <button 
-                onClick={() => setBet(Math.min(walletBalance || 0, bet + 10))} 
+              <button
+                onClick={() => setBet(Math.min(walletBalance || 0, bet + 10))}
                 className="btn btn-circle btn-sm btn-primary btn-outline"
               >
                 +
@@ -223,9 +222,8 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm,
           <button
             onClick={handleConfirm}
             disabled={!isValidBet}
-            className={`btn btn-primary flex-1 gap-2 py-3 ${
-              !isValidBet ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className={`btn btn-primary flex-1 gap-2 py-3 ${!isValidBet ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
           >
             <Icon name="game" className="text-xl" />
             Place Bet & Play

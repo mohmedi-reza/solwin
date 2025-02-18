@@ -102,7 +102,7 @@ const GamePage: React.FC = () => {
       // Show error toast or message
       return;
     }
-    
+
     setShowBettingModal(false);
     setIsDrawing(true);
     setBet(newBet);
@@ -138,7 +138,7 @@ const GamePage: React.FC = () => {
           {/* Hero Section with CTA */}
           <div className="relative py-8 sm:py-12 md:py-16 px-4 sm:px-6 md:px-8 rounded-3xl overflow-hidden">
             {/* Back Button */}
-            <button 
+            <button
               onClick={goToHomePage}
               className="absolute rounded-2xl btn-soft z-50 left-4 sm:left-6 top-4 sm:top-6 btn btn-square backdrop-blur-sm hover:bg-base-200/80 transition-all"
             >
@@ -330,8 +330,8 @@ const GamePage: React.FC = () => {
           {/* Game Rules Collapse */}
           <div ref={rulesRef} className="bg-base-200 rounded-xl overflow-hidden">
             <div tabIndex={0} className="collapse">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 checked={isRulesOpen}
                 onChange={(e) => setIsRulesOpen(e.target.checked)}
               />
