@@ -55,18 +55,39 @@ export interface Transaction {
   txHash?: string;
 }
 
+export interface UserPda {
+  pdaAddress: string;
+  rentFee: number;
+  balance: number;
+}
+
+export interface CurrentMatch {
+  matchId: string;
+  pda: {
+    matchId: string;
+    pdaAddress: string;
+    balance: number;
+  };
+  players: string[];
+  startedAt: string;
+  betAmount: number;
+  status: string;
+}
+
 export interface UserProfile {
   id: string;
   username: string | null;
   avatar: string | null;
-  createdAt: Date;
-  lastLogin: Date;
+  createdAt: string;
+  lastLogin: string;
   stats: UserStats;
   gameHistory: GameHistory[];
   transactions: Transaction[];
   preferences: UserPreferences;
   balance: UserBalance;
-  activeGame?: ActiveGame | null;
+  userPda: UserPda;
+  activeGame: ActiveGame | null;
+  currentMatch: CurrentMatch | null;
 }
 
 export interface UserPreferences {

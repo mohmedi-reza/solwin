@@ -1,16 +1,8 @@
-import React, { useState } from 'react';
-import Icon from '../components/icon/icon.component';
 import { useWallet } from '@solana/wallet-adapter-react';
-
-interface Transaction {
-  id: string;
-  type: 'deposit' | 'withdraw' | 'bet' | 'win';
-  amount: number;
-  date: string;
-  status: 'completed' | 'pending' | 'failed';
-  details: string;
-  hash: string;
-}
+import React, { useEffect, useState } from 'react';
+import Icon from '../components/icon/icon.component';
+import { UserService } from '../services/userService';
+import { UserProfile } from '../types/user';
 
 type TimeFilterType = '24h' | '7d' | '30d' | 'all';
 
@@ -18,46 +10,26 @@ const HistoryPage: React.FC = () => {
   const { publicKey } = useWallet();
   const [activeTab, setActiveTab] = useState<'all' | 'deposits' | 'withdrawals' | 'bets'>('all');
   const [timeFilter, setTimeFilter] = useState<TimeFilterType>('all');
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Mock data - Replace with real data from your backend
-  const [transactions] = useState<Transaction[]>([
-    {
-      id: '1',
-      type: 'deposit',
-      amount: 5.5,
-      date: '2024-03-15 14:30',
-      status: 'completed',
-      details: 'Deposit from Phantom Wallet',
-      hash: '5D4tQd...8Ryk',
-    },
-    {
-      id: '2',
-      type: 'bet',
-      amount: -1.2,
-      date: '2024-03-15 14:35',
-      status: 'completed',
-      details: 'Poker Game Bet',
-      hash: '7H9nMs...2Pql',
-    },
-    {
-      id: '3',
-      type: 'win',
-      amount: 2.4,
-      date: '2024-03-15 14:36',
-      status: 'completed',
-      details: 'Poker Game Win - Royal Flush',
-      hash: '3K7vXp...9Wzt',
-    },
-    {
-      id: '4',
-      type: 'withdraw',
-      amount: -3.0,
-      date: '2024-03-15 15:00',
-      status: 'pending',
-      details: 'Withdrawal to Phantom Wallet',
-      hash: '1A4rBc...5Yuj',
-    },
-  ]);
+  // Fetch user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!publicKey) return;
+      setIsLoading(true);
+      try {
+        const user = await UserService.getOrCreateUser(publicKey.toBase58());
+        setUserProfile(user);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [publicKey]);
 
   if (!publicKey) {
     return (
@@ -71,6 +43,15 @@ const HistoryPage: React.FC = () => {
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center">
+        <div className="loading loading-spinner loading-lg"></div>
+      </div>
+    );
+  }
+
+  const transactions = userProfile?.transactions || [];
   const filteredTransactions = transactions.filter(tx => {
     if (activeTab === 'all') return true;
     if (activeTab === 'deposits') return tx.type === 'deposit';
@@ -78,6 +59,19 @@ const HistoryPage: React.FC = () => {
     if (activeTab === 'bets') return tx.type === 'bet' || tx.type === 'win';
     return true;
   });
+
+  // Calculate stats
+  const stats = {
+    totalDeposits: transactions
+      .filter(tx => tx.type === 'deposit')
+      .reduce((sum, tx) => sum + tx.amount, 0),
+    totalWithdrawals: transactions
+      .filter(tx => tx.type === 'withdraw')
+      .reduce((sum, tx) => sum + tx.amount, 0),
+    netGaming: transactions
+      .filter(tx => tx.type === 'win' || tx.type === 'bet')
+      .reduce((sum, tx) => sum + tx.amount, 0),
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -113,8 +107,7 @@ const HistoryPage: React.FC = () => {
             <Icon name="wallet" className="text-3xl" />
           </div>
           <div className="stat-title">Total Deposits</div>
-          <div className="stat-value text-primary">5.5 SOL</div>
-          <div className="stat-desc">↗︎ 2.1 SOL (24h)</div>
+          <div className="stat-value text-primary">{stats.totalDeposits.toFixed(2)} SOL</div>
         </div>
 
         <div className="stat bg-base-200 rounded-2xl">
@@ -122,8 +115,7 @@ const HistoryPage: React.FC = () => {
             <Icon name="coin" className="text-3xl" />
           </div>
           <div className="stat-title">Total Withdrawals</div>
-          <div className="stat-value text-secondary">3.0 SOL</div>
-          <div className="stat-desc">↘︎ 1.0 SOL (24h)</div>
+          <div className="stat-value text-secondary">{stats.totalWithdrawals.toFixed(2)} SOL</div>
         </div>
 
         <div className="stat bg-base-200 rounded-2xl">
@@ -131,8 +123,7 @@ const HistoryPage: React.FC = () => {
             <Icon name="chart" className="text-3xl" />
           </div>
           <div className="stat-title">Net Gaming</div>
-          <div className="stat-value text-success">+1.2 SOL</div>
-          <div className="stat-desc">↗︎ 0.5 SOL (24h)</div>
+          <div className="stat-value text-success">{stats.netGaming.toFixed(2)} SOL</div>
         </div>
 
         <div className="stat bg-base-200 rounded-2xl">
@@ -141,7 +132,6 @@ const HistoryPage: React.FC = () => {
           </div>
           <div className="stat-title">Total Transactions</div>
           <div className="stat-value">{transactions.length}</div>
-          <div className="stat-desc">↗︎ 12 new (24h)</div>
         </div>
       </div>
 
@@ -183,14 +173,13 @@ const HistoryPage: React.FC = () => {
                 <th>Type</th>
                 <th>Amount</th>
                 <th>Status</th>
-                <th>Details</th>
                 <th>Transaction Hash</th>
               </tr>
             </thead>
             <tbody>
               {filteredTransactions.map((tx) => (
                 <tr key={tx.id}>
-                  <td>{tx.date}</td>
+                  <td>{new Date(tx.timestamp).toLocaleString()}</td>
                   <td>
                     <span className={`badge gap-1 ${
                       tx.type === 'deposit' ? 'badge-primary' :
@@ -221,16 +210,17 @@ const HistoryPage: React.FC = () => {
                       {tx.status}
                     </span>
                   </td>
-                  <td>{tx.details}</td>
                   <td>
-                    <a 
-                      href={`https://solscan.io/tx/${tx.hash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="link link-primary"
-                    >
-                      {tx.hash}
-                    </a>
+                    {tx.txHash && (
+                      <a 
+                        href={`https://solscan.io/tx/${tx.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="link link-primary"
+                      >
+                        {tx.txHash.slice(0, 8)}...{tx.txHash.slice(-4)}
+                      </a>
+                    )}
                   </td>
                 </tr>
               ))}

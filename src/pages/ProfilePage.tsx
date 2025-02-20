@@ -1,40 +1,38 @@
-import React, { useEffect, useState } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-import Icon from '../components/icon/icon.component';
+import React, { useEffect, useState } from 'react';
 import AddressShort from '../components/AddressShort';
-
-interface GameHistory {
-  date: string;
-  type: string;
-  result: string;
-  amount: number;
-  multiplier: number;
-}
+import Icon from '../components/icon/icon.component';
+import { UserService } from '../services/userService';
+import { UserProfile } from '../types/user';
 
 const ProfilePage: React.FC = () => {
   const { publicKey } = useWallet();
   const { connection } = useConnection();
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Mock data - Replace with real data from your backend
-  const [stats] = useState({
-    totalGames: 156,
-    winRate: 62.5,
-    biggestWin: 2500,
-    totalWagered: 15000,
-    netProfit: 3200,
-    favoriteGame: 'Poker',
-  });
+  // Fetch user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!publicKey) return;
+      setIsLoading(true);
+      try {
+        const user = await UserService.getOrCreateUser(publicKey.toBase58());
+        setUserProfile(user);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const [gameHistory] = useState<GameHistory[]>([
-    { date: '2024-03-15', type: 'Poker', result: 'Royal Flush', amount: 2500, multiplier: 50 },
-    { date: '2024-03-14', type: 'Poker', result: 'Full House', amount: -100, multiplier: 0 },
-    { date: '2024-03-14', type: 'Poker', result: 'Two Pair', amount: -50, multiplier: 0 },
-    { date: '2024-03-13', type: 'Poker', result: 'Four of a Kind', amount: 800, multiplier: 25 },
-  ]);
+    fetchUserData();
+  }, [publicKey]);
 
+  // Wallet balance effect remains unchanged
   useEffect(() => {
     const getBalance = async () => {
       if (publicKey) {
@@ -49,7 +47,6 @@ const ProfilePage: React.FC = () => {
 
     getBalance();
     const intervalId = setInterval(getBalance, 20000);
-
     return () => clearInterval(intervalId);
   }, [connection, publicKey]);
 
@@ -72,6 +69,31 @@ const ProfilePage: React.FC = () => {
       </div>
     );
   }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center">
+        <div className="loading loading-spinner loading-lg"></div>
+      </div>
+    );
+  }
+
+  const stats = userProfile?.stats ?? {
+    totalGames: 0,
+    winRate: 0,
+    highestWin: 0,
+    totalWagered: 0,
+    netProfit: 0,
+    favoriteGame: 'None'
+  };
+
+  const recentGames = userProfile?.gameHistory.slice(0, 4).map(game => ({
+    date: new Date(game.startedAt).toISOString().split('T')[0],
+    type: game.gameType,
+    result: game.result.toString(),
+    amount: game.profit,
+    multiplier: game.result // Assuming result represents multiplier for display
+  })) ?? [];
 
   return (
     <div className="container mx-auto px-2 py-8 space-y-8">
@@ -140,7 +162,7 @@ const ProfilePage: React.FC = () => {
             <Icon name="wallet" className="text-3xl" />
           </div>
           <div className="stat-title">Biggest Win</div>
-          <div className="stat-value text-success">${stats.biggestWin}</div>
+          <div className="stat-value text-success">${stats.highestWin}</div>
           <div className="stat-desc">Single game record</div>
         </div>
 
@@ -194,13 +216,12 @@ const ProfilePage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {gameHistory.map((game, index) => (
+              {recentGames.map((game, index) => (
                 <tr key={index}>
                   <td>{game.date}</td>
                   <td>{game.type}</td>
                   <td>
-                    <span className={`badge text-nowrap text-xs ${game.amount > 0 ? 'badge-success' : 'badge-error'
-                      } gap-1`}>
+                    <span className={`badge text-nowrap text-xs ${game.amount > 0 ? 'badge-success' : 'badge-error'} gap-1`}>
                       {game.result}
                     </span>
                   </td>

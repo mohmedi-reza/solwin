@@ -29,7 +29,6 @@ function getCardImagePath(card: Omit<Card, "imagePath">): string {
   const path = `${import.meta.env.BASE_URL}assets/${
     suitMap[card.suit]
   }-${imageNumberStr}.png`;
-  console.log("Card image path:", path, "for card:", card.display);
   return path;
 }
 
@@ -66,7 +65,6 @@ export class PokerGame {
     const values = [14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
 
     this.deck = [];
-    console.log("Initializing deck...");
 
     suits.forEach((suit) => {
       displays.forEach((display, index) => {
@@ -76,7 +74,6 @@ export class PokerGame {
           display,
         };
         const imagePath = getCardImagePath(card);
-        console.log("Created card:", { ...card, imagePath });
         this.deck.push({
           ...card,
           imagePath,
@@ -84,7 +81,6 @@ export class PokerGame {
       });
     });
 
-    console.log("Total cards in deck:", this.deck.length);
     this.shuffle();
   }
 
