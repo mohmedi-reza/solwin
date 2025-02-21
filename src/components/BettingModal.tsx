@@ -84,12 +84,13 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm,
             Place Your Bet
           </h2>
           {publicKey ? (
-            <div className='flex  gap-2 bg-base-200'>
-              <p className="text-base-content/60">
-                Game Balance: <span className="font-bold text-primary">{walletBalance?.toFixed(2) || '0'} SOL</span>
+            <div className='flex justify-between bg-base-200 p-2 rounded-lg'>
+              <p className="text-base-content/60 text-nowrap">
+                <span className='text-xs'>Game Balance:</span> <span className="font-bold text-primary">{walletBalance?.toFixed(2) || '0'} <span className='text-xs text-accent'>SOL</span></span>
+
               </p>
-              <p className="text-base-content/60">
-                Wallet Balance: <span className="font-bold text-secondary">{walletBalance?.toFixed(2) || '0'} SOL</span>
+              <p className="text-base-content/60 text-nowrap">
+                <span className='text-xs'>Wallet Balance:</span> <span className="font-bold text-primary">{walletBalance?.toFixed(2) || '0'} <span className='text-xs text-accent'>SOL</span></span>
               </p>
             </div>
           ) : (

@@ -97,7 +97,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                             {/* Balance Dropdown */}
                             {(balance !== null || userPdaBalance !== null) && (
                                 <div className="dropdown dropdown-end">
-                                    <div tabIndex={0} role="button" className="hidden bg-base-200 sm:flex items-center gap-2 text-base-content/70 hover:text-base-content cursor-pointer p-2 rounded-lg hover:bg-base-200">
+                                    <div tabIndex={0} role="button" className="bg-base-200 flex gap-1 sm:flex items-center text-base-content/70 hover:text-base-content cursor-pointer p-2 rounded-lg hover:bg-base-200">
                                         <Icon name={getBalanceDisplay().icon as IconName} className={`${getBalanceDisplay().iconClass} text-lg`} />
                                         <span>{getBalanceDisplay().value?.toFixed(2)} SOL</span>
                                         <Icon name="arrowSquareDown" className="text-white text-sm opacity-50" />
@@ -218,7 +218,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                         <Link
                             key={path}
                             to={path}
-                            className={`mobile-nav-link ${isActiveRoute(path)
+                            className={`mobile-nav-link flex items-center gap-1 ${isActiveRoute(path)
                                     ? 'text-primary'
                                     : 'text-base-content/70'
                                 }`}

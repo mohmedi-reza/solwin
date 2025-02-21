@@ -548,7 +548,7 @@ const GamePage: React.FC = () => {
 
               {/* Status Section */}
               <div className="text-center space-y-8">
-                <div className="flex flex-col items-center gap-3 px-6 py-3 bg-base-200/50 backdrop-blur-sm rounded-full">
+                <div className="flex flex-col w-fit mx-auto items-center gap-3 px-6 py-3 bg-base-200/50 backdrop-blur-sm rounded-full">
                   <div className='flex items-center gap-3'>
                     <span className="relative flex h-3 w-3">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
