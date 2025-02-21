@@ -7,10 +7,5 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: "/",
   envPrefix: "VITE_",
-  resolve: {
-    alias: {
-      buffer: "buffer",
-      process: "process/browser",
-    },
-  },
+
 });
