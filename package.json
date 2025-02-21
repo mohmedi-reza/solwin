@@ -21,10 +21,8 @@
     "@tanstack/react-query": "5.62.10",
     "@types/js-cookie": "^3.0.6",
     "axios": "^1.7.9",
-    "buffer": "^6.0.3",
     "firebase": "^11.3.1",
     "js-cookie": "^3.0.5",
-    "process": "^0.11.10",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-router-dom": "7.1.5",
@@ -33,18 +31,25 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+    "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
+    "@rollup/plugin-inject": "^5.0.5",
     "@types/node": "^22.10.3",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@types/react-toastify": "^4.1.0",
-    "@vitejs/plugin-react-swc": "^3.5.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react-swc": "^3.8.0",
+    "buffer": "^6.0.3",
     "daisyui": "5.0.0-beta.8",
     "eslint": "^9.19.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^15.14.0",
+    "process": "^0.11.10",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.22.0",
-    "vite": "^6.1.0"
+    "vite": "^6.1.1",
+    "vite-plugin-node-polyfills": "^0.23.0"
   }
 }
