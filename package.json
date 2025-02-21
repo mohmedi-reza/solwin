@@ -21,6 +21,7 @@
     "@tanstack/react-query": "5.62.10",
     "@types/js-cookie": "^3.0.6",
     "axios": "^1.7.9",
+    "buffer": "^6.0.3",
     "firebase": "^11.3.1",
     "js-cookie": "^3.0.5",
     "react": "18.3.1",
