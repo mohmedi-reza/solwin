@@ -20,7 +20,7 @@ const ProfilePage: React.FC = () => {
       if (!publicKey) return;
       setIsLoading(true);
       try {
-        const user = await UserService.getOrCreateUser(publicKey.toBase58());
+        const user = await UserService.getProfile();
         setUserProfile(user);
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -92,7 +92,7 @@ const ProfilePage: React.FC = () => {
     type: game.gameType,
     result: game.result.toString(),
     amount: game.profit,
-    multiplier: game.result // Assuming result represents multiplier for display
+    multiplier: game.result
   })) ?? [];
 
   return (
@@ -205,34 +205,42 @@ const ProfilePage: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Game</th>
-                <th>Result</th>
-                <th>Amount</th>
-                <th>Multiplier</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentGames.map((game, index) => (
-                <tr key={index}>
-                  <td>{game.date}</td>
-                  <td>{game.type}</td>
-                  <td>
-                    <span className={`badge text-nowrap text-xs ${game.amount > 0 ? 'badge-success' : 'badge-error'} gap-1`}>
-                      {game.result}
-                    </span>
-                  </td>
-                  <td className={game.amount > 0 ? 'text-success' : 'text-error'}>
-                    {game.amount > 0 ? '+' : ''}{game.amount}$
-                  </td>
-                  <td>{game.multiplier}x</td>
+          {recentGames.length > 0 ? (
+            <table className="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Game</th>
+                  <th>Result</th>
+                  <th>Amount</th>
+                  <th>Multiplier</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentGames.map((game, index) => (
+                  <tr key={index}>
+                    <td>{game.date}</td>
+                    <td>{game.type}</td>
+                    <td>
+                      <span className={`badge text-nowrap text-xs ${game.amount > 0 ? 'badge-success' : 'badge-error'} gap-1`}>
+                        {game.result}
+                      </span>
+                    </td>
+                    <td className={game.amount > 0 ? 'text-success' : 'text-error'}>
+                      {game.amount > 0 ? '+' : ''}{game.amount}$
+                    </td>
+                    <td>{game.multiplier}x</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="text-center py-8">
+              <Icon name="game" className="text-4xl text-base-content/20 mx-auto mb-2" />
+              <p className="text-base-content/60">No games played yet</p>
+              <button className="btn btn-primary btn-sm mt-4">Play Now</button>
+            </div>
+          )}
         </div>
       </div>
 

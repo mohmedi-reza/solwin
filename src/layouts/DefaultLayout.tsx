@@ -1,13 +1,12 @@
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { AxiosError } from 'axios';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { UserService } from '../services/userService';
-import { UserProfile } from '../types/user';
-import Toolbar from '../components/common/Toolbar';
-import { AuthService } from '../services/authService';
 import { toast } from 'react-toastify';
+import Toolbar from '../components/common/Toolbar';
+import { AuthService, AuthState } from '../services/authService';
 import { useUserStore } from '../stores/userStore';
 
 const DefaultLayout: React.FC = () => {
@@ -16,161 +15,102 @@ const DefaultLayout: React.FC = () => {
     const { setVisible } = useWalletModal();
     const [copied, setCopied] = useState(false);
     const [balance, setBalance] = useState<number | null>(null);
-    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [authLoading, setAuthLoading] = useState(false);
-    const { fetchUser } = useUserStore();
+    const { fetchUser, user } = useUserStore();
+    const [authState, setAuthState] = useState<AuthState>('unauthenticated');
 
     useEffect(() => {
         let isMounted = true;
 
-        const getBalance = async () => {
-            if (publicKey) {
-                try {
-                    const fetchedBalance = await connection.getBalance(publicKey);
-                    if (isMounted) setBalance(fetchedBalance / LAMPORTS_PER_SOL);
-                } catch (error) {
-                    console.error('Error fetching balance:', error);
-                }
-            } else {
-                setBalance(null);
-            }
-        };
-
-        getBalance();
-        const intervalId = setInterval(getBalance, 20000);
-
-        return () => {
-            isMounted = false;
-            clearInterval(intervalId);
-        };
-    }, [connection, publicKey, userProfile]);
-
-    useEffect(() => {
-        let isMounted = true;
-        setIsLoading(true);
-        setError(null);
-
-        const initializeUser = async () => {
-            if (!publicKey) {
-                setUserProfile(null);
-                setIsLoading(false);
-                return;
-            }
-
+        const fetchBalance = async () => {
+            if (!publicKey) return;
             try {
-                const user = await UserService.getOrCreateUser(publicKey.toBase58());
-                if (isMounted) setUserProfile(user);
+                const balance = await connection.getBalance(publicKey);
+                if (isMounted) setBalance(balance / LAMPORTS_PER_SOL);
             } catch (error) {
-                if (isMounted) {
-                    console.error('Error initializing user:', error);
-                    setError('Failed to load user data. Please try reconnecting your wallet.');
-                }
-            } finally {
-                if (isMounted) setIsLoading(false);
+                console.error('Error fetching balance:', error);
             }
         };
 
-        initializeUser();
+        fetchBalance();
+        if (publicKey) {
+            const id = connection.onAccountChange(publicKey, () => {
+                fetchBalance();
+            });
 
+            return () => {
+                isMounted = false;
+                connection.removeAccountChangeListener(id);
+            };
+        }
         return () => {
             isMounted = false;
         };
-    }, [publicKey]);
+    }, [publicKey, connection]);
 
-    const handleAuthenticate = useCallback(async () => {
-        if (!publicKey || !signMessage) return;
+    const handleLogin = useCallback(async () => {
+        if (!publicKey || !signMessage || authState === 'authenticating') return;
         
         setAuthLoading(true);
-        setError(null);
-        
+        AuthService.setAuthState('authenticating');
+        setAuthState('authenticating');
+
         try {
-            const success = await AuthService.login(publicKey, signMessage);
+            const nonce = await AuthService.getNonce(publicKey.toBase58());
+            const message = new TextEncoder().encode(nonce);
+            const signature = await signMessage(message);
+            const base64Signature = Buffer.from(signature).toString('base64');
+            
+            const success = await AuthService.login(
+                publicKey.toBase58(),
+                base64Signature,
+                nonce
+            );
+            
             if (success) {
                 await fetchUser();
+                setAuthState('authenticated');
                 toast.success('Successfully authenticated!');
+            } else {
+                setAuthState('unauthenticated');
+                toast.error('Authentication failed');
             }
-        } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : 'Failed to authenticate. Please try again.';
-            console.error('Authentication error:', error);
-            toast.error(errorMessage);
-            setError(errorMessage);
+        } catch (error) {
+            setAuthState('unauthenticated');
+            console.error('Auth error:', error);
+            const axiosError = error as AxiosError<{ error: string; code: string }>;
+            toast.error(
+                axiosError?.response?.data?.error || 
+                'Authentication failed. Please try again.'
+            );
+            AuthService.clearTokens();
         } finally {
             setAuthLoading(false);
         }
-    }, [publicKey, signMessage, fetchUser]);
+    }, [publicKey, signMessage, fetchUser, authState]);
+
+    useEffect(() => {
+        if (publicKey && !AuthService.isAuthenticated() && authState === 'unauthenticated') {
+            handleLogin();
+        }
+    }, [publicKey, handleLogin, authState]);
 
     const handleDisconnect = useCallback(async () => {
-        try {
-            setAuthLoading(true);
-            await AuthService.logout();
-            await disconnect();
-            setUserProfile(null);
-            toast.success('Wallet disconnected successfully');
-        } catch (error) {
-            console.error('Disconnect error:', error);
-            toast.error('Error disconnecting wallet');
-        } finally {
-            setAuthLoading(false);
-        }
+        await AuthService.logout();
+        disconnect();
+        setAuthState('unauthenticated');
     }, [disconnect]);
 
-    useEffect(() => {
-        const handleWalletConnection = async () => {
-            if (publicKey && !AuthService.isAuthenticated()) {
-                await handleAuthenticate();
-            }
-        };
-
-        handleWalletConnection();
-    }, [publicKey, handleAuthenticate]);
-
-    useEffect(() => {
-        // Fetch user data when component mounts
-        if (AuthService.isAuthenticated()) {
-            fetchUser();
-        }
-    }, [fetchUser]);
-
-    const copyAddress = async () => {
+    const copyAddress = useCallback(() => {
         if (publicKey) {
-            await navigator.clipboard.writeText(publicKey.toBase58());
+            navigator.clipboard.writeText(publicKey.toBase58());
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         }
-    };
-
-    const handleReconnect = async () => {
-        if (wallet) {
-            await disconnect();
-            setTimeout(() => setVisible(true), 500);
-        }
-    };
-
-    if (isLoading || authLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="loading loading-spinner loading-lg"></div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <p className="text-error mb-4">{error}</p>
-                    <button onClick={handleReconnect} className="btn btn-primary">
-                        Reconnect Wallet
-                    </button>
-                </div>
-            </div>
-        );
-    }
+    }, [publicKey]);
 
     return (
-        <div className="min-h-screen bg-base-100">
+        <div className="min-h-screen flex flex-col">
             <Toolbar
                 balance={balance}
                 copied={copied}
@@ -180,10 +120,13 @@ const DefaultLayout: React.FC = () => {
                 disconnect={handleDisconnect}
                 setVisible={setVisible}
                 authLoading={authLoading}
+                userPdaBalance={user?.userPda?.balance ?? null}
             />
-            <main className="container mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:py-6 lg:py-8 min-h-[calc(100vh-4rem)]">
+
+            <main className="flex-1 container mx-auto px-4 py-8">
                 <Outlet />
             </main>
+
             <footer className="hidden md:block bg-base-200 border-t border-base-content/10">
                 <div className="container mx-auto px-4 py-6">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4">

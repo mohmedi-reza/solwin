@@ -49,7 +49,7 @@ const HomePage: React.FC = () => {
       title: "SpeedBet",
       description: "Fast-paced betting game with multipliers",
       status: "Popular",
-      image: "cover-2.png",
+      image: "cover-6.png",
       stats: { minBet: 5, maxWin: "25x", players: 645 }
     },
     {
@@ -64,7 +64,7 @@ const HomePage: React.FC = () => {
       id: 5,
       title: "LuckySpin",
       status: "Trend",
-      image: "cover-1.png",
+      image: "cover-4.png",
       description: "Spin the wheel of fortune",
       stats: { minBet: 1, maxWin: "20x", players: 890 }
     },
@@ -72,7 +72,7 @@ const HomePage: React.FC = () => {
       id: 6,
       title: "FortuneWheel",
       status: "Popular",
-      image: "cover-1.png",
+      image: "cover-5.png",
       description: "Classic fortune wheel with bonuses",
       stats: { minBet: 5, maxWin: "15x", players: 567 }
     }
@@ -91,10 +91,10 @@ const HomePage: React.FC = () => {
         {/* Hero Banner */}
         <div className="relative mt-4 sm:mt-6 lg:mt-8 h-auto sm:h-[180px] py-4 sm:py-6 lg:py-0 bg-gradient-to-r from-base-200/80 via-base-100/40 to-base-200/80 backdrop-blur-sm rounded-3xl mb-8 border border-base-content/20 shadow-[0_0_15px_rgba(var(--primary),0.15)] hover:shadow-[0_0_20px_rgba(var(--primary),0.2)] transition-shadow overflow-hidden">
           {/* Background Effects */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 rounded-3xl"></div>
 
           {/* Animated Shapes */}
-          <div className="absolute inset-0">
+          <div className="absolute inset-0 rounded-3xl">
             {/* Circles */}
             <div className="absolute -top-8 -left-8 w-48 h-48 bg-primary/10 rounded-full mix-blend-multiply filter blur-xl animate-float-1"></div>
             <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-secondary/10 rounded-full mix-blend-multiply filter blur-xl animate-float-2"></div>
@@ -178,71 +178,96 @@ const HomePage: React.FC = () => {
           {/* Game Cards Grid - Better responsive columns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {filteredCards.map((card) => (
-              <div key={card.id} className="card backdrop-blur-md rounded-2xl sm:rounded-3xl bg-base-200 hover:shadow-xl transition-all">
-                {/* Game Image - Adjust height for mobile */}
+              <div key={card.id} className="card bg-base-200 shadow-2xl border border-white/15 hover:scale[1.2] rounded-3xl hover:shadow-xl transition-all flex flex-col min-h-[400px]  overflow-hidden">
+                {/* Game Image - Simplified structure */}
                 <div className="relative h-36 sm:h-40 lg:h-48">
-                  <div className="absolute inset-0 bg-gradient-to-t from-base-200 to-transparent"></div>
+                  {/* Base gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-base-200 to-transparent z-10"></div>
+
+                  {/* Accent color overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10 mix-blend-overlay"></div>
+
+                  {/* Dynamic accent overlay based on status */}
+                  <div className={`absolute inset-0 ${card.status === "Active" ? "bg-success/5" :
+                      card.status === "Trend" ? "bg-secondary/5" :
+                        "bg-accent/5"
+                    } mix-blend-overlay`}></div>
+
                   <img
                     src={card.image}
                     alt={card.title}
-                    className="w-100 rounded-2xl  h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                   />
-                  {card.status === "Active" && (
-                    <div className="absolute top-4 right-4">
+
+                  {/* Status indicators */}
+                  {card.status === "Active" ? (
+                    <div className="absolute top-4 right-4 z-20">
                       <span className="relative flex h-3 w-3">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
                       </span>
                     </div>
+                  ) : (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center">
+                      <div className="bg-accent/20 backdrop-blur-sm px-4 py-2 rounded-lg shadow-xl border border-base-content/10">
+                        <span className="text-sm text-base-content">Under Development</span>
+                      </div>
+                    </div>
                   )}
                 </div>
 
-                {/* Content - Better padding on mobile */}
-                <div className="h-full p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 lg:space-y-4">
-                  <div className="flex justify-between items-start gap-2">
-                    <h3 className="text-xl sm:text-2xl font-bold">{card.title}</h3>
-                    <span className={`badge ${card.status === "Active" ? "badge-success" :
-                        card.status === "Trend" ? "badge-secondary" :
-                          "badge-accent"
-                      }`}>
-                      {card.status}
-                    </span>
+                {/* Content section */}
+                <div className="flex flex-col flex-1 p-4">
+                  <div className="flex-1 space-y-3">
+                    {/* Title and status */}
+                    <div className="flex justify-between items-start gap-2">
+                      <h3 className="text-lg sm:text-xl font-bold">{card.title}</h3>
+                      <span className={`badge ${card.status === "Active" ? "badge-success" :
+                          card.status === "Trend" ? "badge-secondary" :
+                            "badge-accent"
+                        }`}>
+                        {card.status}
+                      </span>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-sm text-base-content/70">
+                      {card.description}
+                    </p>
+
+                    {/* Stats */}
+                    <div className="flex items-center gap-3 text-sm flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <Icon name="wallet" className="text-primary" />
+                        <span>${card.stats.minBet}</span>
+                      </div>
+                      <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
+                      <div className="flex items-center gap-1.5">
+                        <Icon name="cup" className="text-secondary" />
+                        <span>{card.stats.maxWin}</span>
+                      </div>
+                      <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
+                      <div className="flex items-center gap-1.5">
+                        <Icon name="user" className="text-accent" />
+                        <span>{card.stats.players}</span>
+                      </div>
+                    </div>
                   </div>
 
-                  <p className="text-sm sm:text-base text-base-content/70 line-height-3">
-                    {card.description}
-                  </p>
-
-                  {/* Stats - Wrap on small screens */}
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4 text-xs sm:text-sm">
-                    <div className="flex items-center gap-1">
-                      <Icon name="wallet" className="text-primary" />
-                      <span>${card.stats.minBet}</span>
-                    </div>
-                    <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
-                    <div className="flex items-center gap-1">
-                      <Icon name="cup" className="text-secondary" />
-                      <span>{card.stats.maxWin}</span>
-                    </div>
-                    <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
-                    <div className="flex items-center gap-1">
-                      <Icon name="user" className="text-accent" />
-                      <span>{card.stats.players}</span>
-                    </div>
+                  {/* Button */}
+                  <div className="mt-4">
+                    <button
+                      onClick={() => navigate(`/game?id=${card.id}`)}
+                      disabled={card.status !== "Active"}
+                      className="w-full btn btn-primary"
+                    >
+                      <Icon name="game" />
+                      {card.status === "Active" ? "Play Now" : "Coming Soon"}
+                      {card.status === "Active" && (
+                        <div className="absolute -top-1 -right-1 w-2 h-2 status status-error rounded-full animate-ping"></div>
+                      )}
+                    </button>
                   </div>
-
-                  {/* Action Button - حذف z-index */}
-                  <button
-                    onClick={() => navigate(`/game?id=${card.id}`)}
-                    disabled={card.status !== "Active"}
-                    className="w-full relative btn btn-primary py-3 btn-sm sm:btn-md lg:btn-lg"
-                  >
-                    <Icon name="game" />
-                    {card.status === "Active" ? "Play Now" : "Coming Soon"}
-                    {card.status === "Active" && (
-                      <div className="absolute -top-1 -right-1 w-2 h-2 status status-error rounded-full animate-ping"></div>
-                    )}
-                  </button>
                 </div>
               </div>
             ))}

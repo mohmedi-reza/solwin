@@ -262,19 +262,18 @@ const GamePage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div className="card bg-base-200 shadow-lg hover:shadow-xl transition-all">
               <div className="card-body p-3 sm:p-4">
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Icon name="information" className="text-base-content/40" />
-                </div>
                 <h3 className="card-title text-lg flex items-center gap-2">
                   <span className="w-2 h-2 bg-primary rounded-full"></span>
                   Royal Flush
                 </h3>
                 <div className="text-2xl font-bold text-primary">50x</div>
                 <p className="text-base-content/60 text-sm">Ace through 10, same suit</p>
-                <div className="mt-2 flex -space-x-4 opacity-70">
-                  <img src="/assets/Hearts-01.png" className="w-8 h-8 rounded" />
-                  <img src="/assets/Hearts-13.png" className="w-8 h-8 rounded" />
-                  <img src="/assets/Hearts-12.png" className="w-8 h-8 rounded" />
+                <div className="mt-2 flex -space-x-4">
+                  <img src="/assets/Hearts-01.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 " />
+                  <img src="/assets/Hearts-13.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-12.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-11.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-10.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
                 </div>
               </div>
             </div>
@@ -283,6 +282,13 @@ const GamePage: React.FC = () => {
                 <h3 className="card-title text-lg">Straight Flush</h3>
                 <div className="text-2xl font-bold text-primary">10x</div>
                 <p className="text-base-content/60 text-sm">Five consecutive cards, same suit</p>
+                <div className="mt-2 flex -space-x-4">
+                  <img src="/assets/Spades-09.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 " />
+                  <img src="/assets/Spades-08.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-06.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-05.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                </div>
               </div>
             </div>
             <div className="card bg-base-200 shadow-lg hover:shadow-xl transition-all">
@@ -290,6 +296,13 @@ const GamePage: React.FC = () => {
                 <h3 className="card-title text-lg">Four of a Kind</h3>
                 <div className="text-2xl font-bold text-primary">5x</div>
                 <p className="text-base-content/60 text-sm">Four cards of same rank</p>
+                <div className="mt-2 flex -space-x-4">
+                  <img src="/assets/Hearts-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 " />
+                  <img src="/assets/Diamonds-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Clubs-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-02.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px] opacity-50" />
+                </div>
               </div>
             </div>
             <div className="card bg-base-200 shadow-lg hover:shadow-xl transition-all">
@@ -297,6 +310,13 @@ const GamePage: React.FC = () => {
                 <h3 className="card-title text-lg">Full House</h3>
                 <div className="text-2xl font-bold text-primary">4x</div>
                 <p className="text-base-content/60 text-sm">Three of a kind with a pair</p>
+                <div className="mt-2 flex -space-x-4">
+                  <img src="/assets/Hearts-04.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 " />
+                  <img src="/assets/Diamonds-04.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Clubs-04.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-09.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-09.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                </div>
               </div>
             </div>
           </div>

@@ -44,6 +44,7 @@ export interface GameHistory {
   bet: number;
   result: number;
   profit: number;
+  matchId?: string;
 }
 
 export interface Transaction {
@@ -53,6 +54,7 @@ export interface Transaction {
   timestamp: Date;
   status: "pending" | "completed" | "failed";
   txHash?: string;
+  matchId?: string;
 }
 
 export interface UserPda {
@@ -101,6 +103,7 @@ export interface UserPreferences {
 export interface UserBalance {
   available: number;
   locked: number;
+  pdaBalance: number;
   totalDeposited: number;
   totalWithdrawn: number;
 }
@@ -110,4 +113,5 @@ export interface ActiveGame {
   startedAt: Date;
   bet: number;
   gameData: GameData;
+  matchId?: string;
 }

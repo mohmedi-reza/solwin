@@ -111,10 +111,12 @@ apiClient.interceptors.response.use(
             return apiClient(originalRequest);
           }
         }
+        AuthService.setAuthState('unauthenticated');
         throw new Error("Token refresh failed");
       } catch (refreshError) {
         processQueue(refreshError as Error); // Process queue with error
         AuthService.clearTokens();
+        AuthService.setAuthState('unauthenticated');
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

@@ -1,59 +1,128 @@
-import apiClient from "./api.service";
-import Cookies from "js-cookie";
-import { toast } from "react-toastify";
-import { useUserStore } from "../stores/userStore";
-import { PublicKey } from '@solana/web3.js';
-import { AuthError, AuthResponse, NonceResponse, RefreshTokenResponse } from "../types/auth";
 import { AxiosError } from "axios";
+import Cookies from "js-cookie";
+import { useUserStore } from "../stores/userStore";
+import { AuthError, RefreshTokenResponse } from "../types/auth";
+import { UserProfile } from "../types/user";
+import apiClient from "./api.service";
 
-const COOKIE_OPTIONS: Cookies.CookieAttributes = {
+const COOKIE_OPTIONS = {
   expires: 7,
   secure: true,
   sameSite: "Strict",
-};
+} as const;
+
+interface LoginResponse {
+  user: {
+    id: string;
+    username: string;
+    avatar: string;
+    createdAt: string;
+    lastLogin: string;
+    balance: {
+      available: number;
+      locked: number;
+      pdaBalance: number;
+      totalDeposited: number;
+      totalWithdrawn: number;
+    };
+    stats: {
+      totalGames: number;
+      wins: number;
+      losses: number;
+      winRate: number;
+    };
+    userPda: {
+      pdaAddress: string;
+      rentFee: number;
+      balance: number;
+    };
+  };
+  accessToken: string;
+  refreshToken: string;
+}
+
+// Add new auth state type
+export type AuthState = 'authenticated' | 'unauthenticated' | 'authenticating';
 
 export const AuthService = {
   getNonce: async (publicKey: string): Promise<string> => {
     try {
-      const response = await apiClient.get<NonceResponse>(`/auth/nonce/${publicKey}`);
+      const response = await apiClient.get<{ nonce: string }>(
+        `/auth/nonce/${publicKey}`
+      );
       return response.data.nonce;
     } catch (err) {
-      const error = err as AxiosError<AuthError>;
+      const error = err as AxiosError<{ error: string; code: string }>;
       console.error("Error fetching nonce:", error);
-      toast.error(error.response?.data?.message || "Failed to get authentication nonce");
       throw error;
     }
   },
 
-  async login(publicKey: PublicKey, signMessage: (message: Uint8Array) => Promise<Uint8Array>): Promise<boolean> {
-    try {
-      // Get nonce
-      const nonce = await this.getNonce(publicKey.toString());
-      
-      // Sign nonce
-      const messageBytes = new TextEncoder().encode(nonce);
-      const signature = await signMessage(messageBytes);
-      const signatureBase64 = Buffer.from(signature).toString('base64');
+  // Change from private property to regular property with underscore convention
+  _authState: 'unauthenticated' as AuthState,
+  
+  getAuthState(): AuthState {
+    return this._authState;
+  },
 
-      // Login request
-      const response = await apiClient.post<AuthResponse>('/auth/login', {
-        publicKey: publicKey.toString(),
-        signature: signatureBase64,
-        nonce: nonce
+  setAuthState(state: AuthState) {
+    this._authState = state;
+  },
+
+  async login(
+    publicKey: string,
+    signature: string,
+    nonce: string
+  ): Promise<boolean> {
+    this.setAuthState('authenticating');
+    try {
+      const response = await apiClient.post<LoginResponse>("/auth/login", {
+        publicKey,
+        signature,
+        nonce,
       });
 
-      if (response.data) {
+      if (response.data?.accessToken && response.data?.refreshToken) {
         this.setTokens(response.data.accessToken, response.data.refreshToken);
-        useUserStore.getState().setUser(response.data.user);
+        if (response.data.user) {
+          const userProfile: UserProfile = {
+            ...response.data.user,
+            gameHistory: [],
+            transactions: [],
+            preferences: {
+              theme: "system",
+              soundEnabled: true,
+              notifications: true,
+              autoExitCrash: false,
+              defaultBetAmount: 0,
+            },
+            stats: {
+              ...response.data.user.stats,
+              totalBets: 0,
+              totalWinnings: 0,
+              highestWin: 0,
+              lastGamePlayed: new Date(),
+              totalWagered: 0,
+              netProfit: 0,
+              favoriteGame: "",
+              gamesPlayed: { poker: 0, crash: 0 },
+            },
+            activeGame: null,
+            currentMatch: null,
+          };
+          useUserStore.getState().setUser(userProfile);
+        }
+        this.setAuthState('authenticated');
         return true;
       }
+      this.setAuthState('unauthenticated');
       return false;
-
     } catch (err) {
-      const error = err as AxiosError<AuthError>;
-      console.error("Login error:", error);
-      toast.error(error.response?.data?.message || "Login failed");
-      return false;
+      this.setAuthState('unauthenticated');
+      const error = err as AxiosError<{ error: string; code: string }>;
+      console.error("Login error:", error.response?.data);
+      this.clearTokens();
+      throw error;
     }
   },
 
@@ -70,20 +139,29 @@ export const AuthService = {
   async refreshTokens(): Promise<boolean> {
     try {
       const refreshToken = Cookies.get("refreshToken");
-      if (!refreshToken) return false;
+      if (!refreshToken) {
+        console.log("No refresh token found");
+        return false;
+      }
 
-      const response = await apiClient.post<RefreshTokenResponse>("/auth/refresh-token", {
-        refreshToken
-      });
+      const response = await apiClient.post<RefreshTokenResponse>(
+        "/auth/refresh-token",
+        { refreshToken }
+      );
 
-      if (response.data) {
+      if (response.data?.accessToken && response.data?.refreshToken) {
         this.setTokens(response.data.accessToken, response.data.refreshToken);
         return true;
       }
+
+      console.error("Refresh response missing tokens:", response.data);
       return false;
     } catch (err) {
       const error = err as AxiosError<AuthError>;
-      console.error("Token refresh failed:", error);
+      console.error(
+        "Token refresh failed:",
+        error.response?.data || error.message
+      );
       this.clearTokens();
       return false;
     }
@@ -91,11 +169,13 @@ export const AuthService = {
 
   async logout() {
     try {
-      await apiClient.post("/auth/logout");
+      if (this.isAuthenticated()) {
+        await apiClient.post("/auth/logout");
+      }
     } catch (err) {
-      const error = err as AxiosError<AuthError>;
-      console.error("Logout error:", error);
+      console.error("Logout error:", err);
     } finally {
+      this.setAuthState('unauthenticated');
       this.clearTokens();
       useUserStore.getState().clearUser();
     }

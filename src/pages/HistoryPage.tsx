@@ -19,7 +19,7 @@ const HistoryPage: React.FC = () => {
       if (!publicKey) return;
       setIsLoading(true);
       try {
-        const user = await UserService.getOrCreateUser(publicKey.toBase58());
+        const user = await UserService.getProfile();
         setUserProfile(user);
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -166,66 +166,81 @@ const HistoryPage: React.FC = () => {
       {/* Transactions Table */}
       <div className="bg-base-200 rounded-3xl p-6">
         <div className="overflow-x-auto">
-          <table className="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Transaction Hash</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTransactions.map((tx) => (
-                <tr key={tx.id}>
-                  <td>{new Date(tx.timestamp).toLocaleString()}</td>
-                  <td>
-                    <span className={`badge gap-1 ${
-                      tx.type === 'deposit' ? 'badge-primary' :
-                      tx.type === 'withdraw' ? 'badge-secondary' :
-                      tx.type === 'win' ? 'badge-success' :
-                      'badge-error'
-                    }`}>
-                      <Icon name={
-                        tx.type === 'deposit' ? 'wallet' :
-                        tx.type === 'withdraw' ? 'coin' :
-                        tx.type === 'win' ? 'star' :
-                        'game'
-                      } className="text-sm" />
-                      {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}
-                    </span>
-                  </td>
-                  <td className={`font-bold ${
-                    tx.amount > 0 ? 'text-success' : 'text-error'
-                  }`}>
-                    {tx.amount > 0 ? '+' : ''}{tx.amount} SOL
-                  </td>
-                  <td>
-                    <span className={`badge badge-sm ${
-                      tx.status === 'completed' ? 'badge-success' :
-                      tx.status === 'pending' ? 'badge-warning' :
-                      'badge-error'
-                    }`}>
-                      {tx.status}
-                    </span>
-                  </td>
-                  <td>
-                    {tx.txHash && (
-                      <a 
-                        href={`https://solscan.io/tx/${tx.txHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="link link-primary"
-                      >
-                        {tx.txHash.slice(0, 8)}...{tx.txHash.slice(-4)}
-                      </a>
-                    )}
-                  </td>
+          {filteredTransactions.length > 0 ? (
+            <table className="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Transaction Hash</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredTransactions.map((tx) => (
+                  <tr key={tx.id}>
+                    <td>{new Date(tx.timestamp).toLocaleString()}</td>
+                    <td>
+                      <span className={`badge gap-1 ${
+                        tx.type === 'deposit' ? 'badge-primary' :
+                        tx.type === 'withdraw' ? 'badge-secondary' :
+                        tx.type === 'win' ? 'badge-success' :
+                        'badge-error'
+                      }`}>
+                        <Icon name={
+                          tx.type === 'deposit' ? 'wallet' :
+                          tx.type === 'withdraw' ? 'coin' :
+                          tx.type === 'win' ? 'star' :
+                          'game'
+                        } className="text-sm" />
+                        {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}
+                      </span>
+                    </td>
+                    <td className={`font-bold ${
+                      tx.amount > 0 ? 'text-success' : 'text-error'
+                    }`}>
+                      {tx.amount > 0 ? '+' : ''}{tx.amount} SOL
+                    </td>
+                    <td>
+                      <span className={`badge badge-sm ${
+                        tx.status === 'completed' ? 'badge-success' :
+                        tx.status === 'pending' ? 'badge-warning' :
+                        'badge-error'
+                      }`}>
+                        {tx.status}
+                      </span>
+                    </td>
+                    <td>
+                      {tx.txHash && (
+                        <a 
+                          href={`https://solscan.io/tx/${tx.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="link link-primary"
+                        >
+                          {tx.txHash.slice(0, 8)}...{tx.txHash.slice(-4)}
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="text-center py-8">
+              <Icon name="transactionMinus" className="text-4xl text-base-content/20 mx-auto mb-2" />
+              <p className="text-base-content/60">
+                {activeTab === 'all' ? 'No transactions found' :
+                 activeTab === 'deposits' ? 'No deposits yet' :
+                 activeTab === 'withdrawals' ? 'No withdrawals yet' :
+                 'No gaming transactions yet'}
+              </p>
+              {activeTab === 'deposits' && (
+                <button className="btn btn-primary btn-sm mt-4">Make a Deposit</button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

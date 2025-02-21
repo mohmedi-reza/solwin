@@ -81,6 +81,14 @@ module.exports = {
           '0%, 100%': { 'background-size': '200% 200%', 'background-position': 'left center' },
           '50%': { 'background-size': '200% 200%', 'background-position': 'right center' },
         },
+        'gradient-shift': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+        'float': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
       },
       animation: {
         fadeIn: 'fadeIn 0.5s ease-out',
@@ -99,6 +107,10 @@ module.exports = {
         'float-2': 'float-2 8s ease-in-out infinite',
         'float-3': 'float-3 7s ease-in-out infinite',
         'gradient': 'gradient 8s ease infinite',
+        'gradient-shift': 'gradient-shift 3s ease infinite',
+        'float': 'float 3s ease-in-out infinite',
+        'float-slow': 'float 4s ease-in-out infinite',
+        'float-slower': 'float 5s ease-in-out infinite',
       },
       utilities: {
         '.animation-delay-2000': {
