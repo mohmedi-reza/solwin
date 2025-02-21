@@ -1,5 +1,5 @@
 import apiClient from './api.service';
-import { UserProfile } from '../types/user';
+import { UserProfile } from '../types/user.interface';
 
 export class UserService {
   static async getProfile(): Promise<UserProfile> {

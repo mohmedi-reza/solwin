@@ -1,4 +1,4 @@
-import { GameType } from "./game";
+import { GameType } from "./game.interface";
 
 export interface UserStats {
   totalGames: number;

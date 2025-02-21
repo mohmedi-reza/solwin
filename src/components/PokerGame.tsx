@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { Card, HandResult } from '../types/poker';
-import { PokerGame as PokerGameService } from '../services/pokerGame';
+import { Card, HandResult } from '../types/poker.interface';
+import { PokerGame as PokerGameService } from '../services/poker.service';
 
 const game = new PokerGameService();
 

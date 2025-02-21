@@ -4,8 +4,8 @@ import axios, {
   AxiosResponse,
 } from "axios";
 import { toast } from "react-toastify";
-import { AuthService } from "./authService";
-import { AuthError } from "../types/auth";
+import { AuthService } from "./auth.service";
+import { AuthError } from "../types/auth.interface";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://api-poker-sol.bestudios.dev";

@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BettingModal from '../components/BettingModal';
 import Icon from '../components/icon/icon.component';
-import { PokerGame } from '../services/pokerGame';
-import { Card, HandResult } from '../types/poker';
+import { PokerGame } from '../services/poker.service';
+import { Card, HandResult } from '../types/poker.interface';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 

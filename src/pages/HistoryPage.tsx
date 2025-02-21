@@ -1,8 +1,8 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import React, { useEffect, useState } from 'react';
 import Icon from '../components/icon/icon.component';
-import { UserService } from '../services/userService';
-import { UserProfile } from '../types/user';
+import { UserService } from '../services/user.service';
+import { UserProfile } from '../types/user.interface';
 
 type TimeFilterType = '24h' | '7d' | '30d' | 'all';
 

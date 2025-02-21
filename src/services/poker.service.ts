@@ -1,4 +1,4 @@
-import { Card, HAND_MULTIPLIERS, HandResult, HandType } from "../types/poker";
+import { Card, HAND_MULTIPLIERS, HandResult, HandType } from "../types/poker.interface";
 
 function getCardImagePath(card: Omit<Card, "imagePath">): string {
   const suitMap = {

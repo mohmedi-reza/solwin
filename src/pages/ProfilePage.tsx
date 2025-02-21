@@ -3,8 +3,8 @@ import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import React, { useEffect, useState } from 'react';
 import AddressShort from '../components/AddressShort';
 import Icon from '../components/icon/icon.component';
-import { UserService } from '../services/userService';
-import { UserProfile } from '../types/user';
+import { UserService } from '../services/user.service';
+import { UserProfile } from '../types/user.interface';
 
 const ProfilePage: React.FC = () => {
   const { publicKey } = useWallet();

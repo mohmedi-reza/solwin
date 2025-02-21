@@ -6,8 +6,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Toolbar from '../components/common/Toolbar';
-import { AuthService, AuthState } from '../services/authService';
-import { useUserStore } from '../stores/userStore';
+import { AuthService, AuthState } from '../services/auth.service';
+import { useUserStore } from '../stores/user.store';
 
 const DefaultLayout: React.FC = () => {
     const { wallet, disconnect, publicKey, signMessage } = useWallet();

@@ -1,6 +1,6 @@
-import { create } from "zustand"; // ✅ Fixed import
-import { UserProfile } from "../types/user";
-import { AuthService } from "../services/authService";
+import { create } from "zustand";
+import { UserProfile } from "../types/user.interface";
+import { AuthService } from "../services/auth.service";
 import apiClient from "../services/api.service";
 import { StateCreator } from "zustand";
 

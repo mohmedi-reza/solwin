@@ -1,8 +1,8 @@
 import { AxiosError } from "axios";
 import Cookies from "js-cookie";
-import { useUserStore } from "../stores/userStore";
-import { AuthError, RefreshTokenResponse } from "../types/auth";
-import { UserProfile } from "../types/user";
+import { useUserStore } from "../stores/user.store";
+import { AuthError, RefreshTokenResponse } from "../types/auth.interface";
+import { UserProfile } from "../types/user.interface";
 import apiClient from "./api.service";
 
 const COOKIE_OPTIONS = {

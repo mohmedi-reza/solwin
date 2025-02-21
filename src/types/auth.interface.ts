@@ -1,4 +1,4 @@
-import { UserProfile } from "./user";
+import { UserProfile } from "./user.interface";
 
 export interface SignInMessage {
   message: string;
