@@ -82,7 +82,15 @@ apiClient.interceptors.request.use(
 
 // Response interceptor
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    // Log response for debugging
+    console.log("API Response:", {
+      url: response.config.url,
+      status: response.status,
+      data: response.data
+    });
+    return response;
+  },
   async (error: AxiosError<AuthError>) => {
     const originalRequest = error.config as RetryableRequest;
 

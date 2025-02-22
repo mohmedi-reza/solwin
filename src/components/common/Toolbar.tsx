@@ -1,39 +1,150 @@
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import React, { useState } from 'react';
+import { AxiosError } from 'axios';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import Icon from '../icon/icon.component';
+import { toast } from 'react-toastify';
+import { AuthService, AuthState } from '../../services/auth.service';
 import AddressShort from '../AddressShort';
+import Icon from '../icon/icon.component';
 import { IconName } from '../icon/iconPack';
-
-interface ToolbarProps {
-    balance: number | null;
-    copied: boolean;
-    copyAddress: () => void;
-    wallet: ReturnType<typeof useWallet>['wallet'];
-    publicKey: ReturnType<typeof useWallet>['publicKey'];
-    disconnect: ReturnType<typeof useWallet>['disconnect'];
-    setVisible: ReturnType<typeof useWalletModal>['setVisible'];
-    authLoading: boolean;
-    userPdaBalance: number | null;
-}
+import { UserService, WalletBalance } from '../../services/user.service';
 
 // Add new type for balance display
 type BalanceDisplay = 'pda' | 'wallet';
 
-const Toolbar: React.FC<ToolbarProps> = ({
-    balance,
-    copied,
-    copyAddress,
-    wallet,
-    publicKey,
-    disconnect,
-    setVisible,
-    authLoading,
-    userPdaBalance,
-}) => {
+const Toolbar: React.FC = () => {
     const location = useLocation();
     const [selectedBalance, setSelectedBalance] = useState<BalanceDisplay>('pda');
+    const { wallet, disconnect, publicKey, signMessage } = useWallet();
+    const { connection } = useConnection();
+    const { setVisible } = useWalletModal();
+    const [copied, setCopied] = useState(false);
+    const [balance, setBalance] = useState<string | null>(null);
+    const [authLoading, setAuthLoading] = useState(false);
+    const [authState, setAuthState] = useState<AuthState>('unauthenticated');
+    const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchBalance = async () => {
+            if (!publicKey) return;
+            try {
+                const balance = await connection.getBalance(publicKey);
+                if (isMounted) setBalance(balance.toString());
+            } catch (error) {
+                console.error('Error fetching balance:', error);
+            }
+        };
+
+        fetchBalance();
+        if (publicKey) {
+            const id = connection.onAccountChange(publicKey, () => {
+                fetchBalance();
+            });
+
+            return () => {
+                isMounted = false;
+                connection.removeAccountChangeListener(id);
+            };
+        }
+        return () => {
+            isMounted = false;
+        };
+    }, [publicKey, connection]);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchWalletBalance = async () => {
+            if (!AuthService.isAuthenticated()) return;
+
+            try {
+                const balance = await UserService.getWalletBalance();
+                console.log('Wallet Balance from API:', balance); // Add this
+                if (isMounted) {
+                    setWalletBalance(balance);
+                    const currentPdaData = AuthService.getPdaData();
+                    if (currentPdaData.pdaAddress) {
+                        AuthService.setPdaData(currentPdaData.pdaAddress, balance.pdaBalance);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching wallet balance:', error);
+            }
+        };
+
+        fetchWalletBalance();
+
+        // Set up an interval to refresh the balance
+        const intervalId = setInterval(fetchWalletBalance, 30000); // Refresh every 30 seconds
+
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+        };
+    }, [authState]);
+
+    const handleLogin = useCallback(async () => {
+        if (!publicKey || !signMessage || authState === 'authenticating') return;
+
+        setAuthLoading(true);
+        AuthService.setAuthState('authenticating');
+        setAuthState('authenticating');
+
+        try {
+            const nonce = await AuthService.getNonce(publicKey.toBase58());
+            const message = new TextEncoder().encode(nonce);
+            const signature = await signMessage(message);
+            const base64Signature = Buffer.from(signature).toString('base64');
+
+            const success = await AuthService.login(
+                publicKey.toBase58(),
+                base64Signature,
+                nonce
+            );
+
+            if (success) {
+                setAuthState('authenticated');
+                toast.success('Successfully authenticated!');
+            } else {
+                setAuthState('unauthenticated');
+                toast.error('Authentication failed');
+            }
+        } catch (error) {
+            setAuthState('unauthenticated');
+            console.error('Auth error:', error);
+            const axiosError = error as AxiosError<{ error: string; code: string }>;
+            toast.error(
+                axiosError?.response?.data?.error ||
+                'Authentication failed. Please try again.'
+            );
+            AuthService.clearTokens();
+        } finally {
+            setAuthLoading(false);
+        }
+    }, [publicKey, signMessage, authState]);
+
+    useEffect(() => {
+        if (publicKey && !AuthService.isAuthenticated() && authState === 'unauthenticated') {
+            handleLogin();
+        }
+    }, [publicKey, handleLogin, authState]);
+
+    const handleDisconnect = useCallback(async () => {
+        await AuthService.logout();
+        disconnect();
+        setAuthState('unauthenticated');
+    }, [disconnect]);
+
+    const copyAddress = useCallback(() => {
+        if (publicKey) {
+            navigator.clipboard.writeText(publicKey.toBase58());
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    }, [publicKey]);
 
     const isActiveRoute = (path: string) => {
         if (path === '/') {
@@ -43,11 +154,11 @@ const Toolbar: React.FC<ToolbarProps> = ({
     };
 
     const getBalanceDisplay = () => {
-        if (selectedBalance === 'pda' && userPdaBalance !== null) {
+        if (selectedBalance === 'pda' && walletBalance?.pdaBalance !== undefined) {
             return {
                 icon: "wallet",
                 iconClass: "text-success",
-                value: userPdaBalance,
+                value: walletBalance.pdaBalance,
                 label: "Game Balance"
             };
         }
@@ -82,8 +193,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                     key={path}
                                     to={path}
                                     className={`nav-link flex items-center gap-1 transition-colors duration-200 hover:text-primary ${isActiveRoute(path)
-                                            ? 'text-primary font-medium'
-                                            : 'text-base-content/70'
+                                        ? 'text-primary font-medium'
+                                        : 'text-base-content/70'
                                         }`}
                                 >
                                     <Icon name={icon as IconName} className="text-lg" />
@@ -95,26 +206,38 @@ const Toolbar: React.FC<ToolbarProps> = ({
                         {/* Actions - Responsive */}
                         <div className="flex items-center gap-2 sm:gap-4">
                             {/* Balance Dropdown */}
-                            {(balance !== null || userPdaBalance !== null) && (
+                            {(balance !== null || walletBalance?.pdaBalance !== null) && (
                                 <div className="dropdown dropdown-end">
                                     <div tabIndex={0} role="button" className="bg-base-200 flex gap-1 sm:flex items-center text-base-content/70 hover:text-base-content cursor-pointer p-2 rounded-lg hover:bg-base-200">
                                         <Icon name={getBalanceDisplay().icon as IconName} className={`${getBalanceDisplay().iconClass} text-lg`} />
-                                        <span>{getBalanceDisplay().value?.toFixed(2)} SOL</span>
+                                        <p className='flex gap-2'>
+                                            <span>     {selectedBalance === 'pda'
+                                                ? parseFloat(walletBalance?.pdaBalance ?? '0').toLocaleString(undefined, {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 9,
+                                                })
+                                                : parseFloat(balance ?? '0').toLocaleString(undefined, {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 9,
+                                                })}</span>
+                                            <span>SOL</span>
+                                        </p>
+
                                         <Icon name="arrowSquareDown" className="text-white text-sm opacity-50" />
                                     </div>
-                                    <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-200 rounded-box w-52">
+                                    <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-200 rounded-box w-fit">
                                         <li className="menu-title">
                                             <span>Select Balance</span>
                                         </li>
-                                        {userPdaBalance !== null && (
+                                        {walletBalance?.pdaBalance !== undefined && (
                                             <li>
                                                 <button
                                                     onClick={() => setSelectedBalance('pda')}
                                                     className={selectedBalance === 'pda' ? 'active' : ''}
                                                 >
                                                     <Icon name="wallet" className="text-success" />
-                                                    Game Balance
-                                                    <span className="ml-auto">{userPdaBalance.toFixed(2)} SOL</span>
+                                                    <span className='text-nowrap'>Game Balance:</span>
+                                                    <p className="ml-auto flex gap-2"><span>{walletBalance.pdaBalance}</span> <span>SOL</span></p>
                                                 </button>
                                             </li>
                                         )}
@@ -125,8 +248,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                                     className={selectedBalance === 'wallet' ? 'active' : ''}
                                                 >
                                                     <Icon name="coin" className="text-primary" />
-                                                    Wallet Balance
-                                                    <span className="ml-auto">{balance.toFixed(2)} SOL</span>
+                                                   <span className='text-nowrap'> Wallet Balance:</span>
+                                                    <span className="ml-auto">{balance} SOL</span>
                                                 </button>
                                             </li>
                                         )}
@@ -184,7 +307,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                         </li>
                                         <li>
                                             <button
-                                                onClick={disconnect}
+                                                onClick={handleDisconnect}
                                                 className="flex items-center gap-2 text-error"
                                                 disabled={authLoading}
                                             >
@@ -219,8 +342,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
                             key={path}
                             to={path}
                             className={`mobile-nav-link flex items-center gap-1 ${isActiveRoute(path)
-                                    ? 'text-primary'
-                                    : 'text-base-content/70'
+                                ? 'text-primary'
+                                : 'text-base-content/70'
                                 }`}
                         >
                             <Icon name={icon as IconName} className="text-xl" />

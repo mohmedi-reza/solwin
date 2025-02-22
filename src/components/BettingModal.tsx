@@ -86,11 +86,11 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm,
           {publicKey ? (
             <div className='flex justify-between bg-base-200 p-2 rounded-lg'>
               <p className="text-base-content/60 text-nowrap">
-                <span className='text-xs'>Game Balance:</span> <span className="font-bold text-primary">{walletBalance?.toFixed(2) || '0'} <span className='text-xs text-accent'>SOL</span></span>
+                <span className='text-xs'>Game Balance:</span> <span className="font-bold text-primary">{walletBalance || '0'} <span className='text-xs text-accent'>SOL</span></span>
 
               </p>
               <p className="text-base-content/60 text-nowrap">
-                <span className='text-xs'>Wallet Balance:</span> <span className="font-bold text-primary">{walletBalance?.toFixed(2) || '0'} <span className='text-xs text-accent'>SOL</span></span>
+                <span className='text-xs'>Wallet Balance:</span> <span className="font-bold text-primary">{walletBalance || '0'} <span className='text-xs text-accent'>SOL</span></span>
               </p>
             </div>
           ) : (
@@ -201,11 +201,11 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm,
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-success/10 p-3 rounded-lg">
               <p className="text-sm text-base-content/60">Max Win (Royal Flush)</p>
-              <p className="text-2xl font-bold text-success">+${potentialWin.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-success">+${potentialWin}</p>
             </div>
             <div className="bg-error/10 p-3 rounded-lg">
               <p className="text-sm text-base-content/60">Max Loss</p>
-              <p className="text-2xl font-bold text-error">-${(bet * risk).toFixed(2)}</p>
+              <p className="text-2xl font-bold text-error">-${(bet * risk)}</p>
             </div>
           </div>
         </div>

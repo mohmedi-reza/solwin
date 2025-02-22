@@ -1,14 +1,20 @@
 import { AxiosError } from "axios";
 import Cookies from "js-cookie";
-import { useUserStore } from "../stores/user.store";
 import { AuthError, RefreshTokenResponse } from "../types/auth.interface";
-import { UserProfile } from "../types/user.interface";
 import apiClient from "./api.service";
 
 const COOKIE_OPTIONS = {
   expires: 7,
   secure: true,
   sameSite: "Strict",
+} as const;
+
+// Add new cookie names
+const COOKIE_NAMES = {
+  ACCESS_TOKEN: "accessToken",
+  REFRESH_TOKEN: "refreshToken",
+  PDA_ADDRESS: "pdaAddress",
+  PDA_BALANCE: "pdaBalance",
 } as const;
 
 interface LoginResponse {
@@ -21,7 +27,7 @@ interface LoginResponse {
     balance: {
       available: number;
       locked: number;
-      pdaBalance: number;
+      pdaBalance: string;
       totalDeposited: number;
       totalWithdrawn: number;
     };
@@ -42,7 +48,7 @@ interface LoginResponse {
 }
 
 // Add new auth state type
-export type AuthState = 'authenticated' | 'unauthenticated' | 'authenticating';
+export type AuthState = "authenticated" | "unauthenticated" | "authenticating";
 
 export const AuthService = {
   getNonce: async (publicKey: string): Promise<string> => {
@@ -59,8 +65,8 @@ export const AuthService = {
   },
 
   // Change from private property to regular property with underscore convention
-  _authState: 'unauthenticated' as AuthState,
-  
+  _authState: "unauthenticated" as AuthState,
+
   getAuthState(): AuthState {
     return this._authState;
   },
@@ -74,7 +80,7 @@ export const AuthService = {
     signature: string,
     nonce: string
   ): Promise<boolean> {
-    this.setAuthState('authenticating');
+    this.setAuthState("authenticating");
     try {
       const response = await apiClient.post<LoginResponse>("/auth/login", {
         publicKey,
@@ -84,41 +90,19 @@ export const AuthService = {
 
       if (response.data?.accessToken && response.data?.refreshToken) {
         this.setTokens(response.data.accessToken, response.data.refreshToken);
-        if (response.data.user) {
-          const userProfile: UserProfile = {
-            ...response.data.user,
-            gameHistory: [],
-            transactions: [],
-            preferences: {
-              theme: "system",
-              soundEnabled: true,
-              notifications: true,
-              autoExitCrash: false,
-              defaultBetAmount: 0,
-            },
-            stats: {
-              ...response.data.user.stats,
-              totalBets: 0,
-              totalWinnings: 0,
-              highestWin: 0,
-              lastGamePlayed: new Date(),
-              totalWagered: 0,
-              netProfit: 0,
-              favoriteGame: "",
-              gamesPlayed: { poker: 0, crash: 0 },
-            },
-            activeGame: null,
-            currentMatch: null,
-          };
-          useUserStore.getState().setUser(userProfile);
+        if (response.data.user?.userPda) {
+          this.setPdaData(
+            response.data.user.userPda.pdaAddress,
+            response.data.user.userPda.balance.toString()
+          );
         }
-        this.setAuthState('authenticated');
+        this.setAuthState("authenticated");
         return true;
       }
-      this.setAuthState('unauthenticated');
+      this.setAuthState("unauthenticated");
       return false;
     } catch (err) {
-      this.setAuthState('unauthenticated');
+      this.setAuthState("unauthenticated");
       const error = err as AxiosError<{ error: string; code: string }>;
       console.error("Login error:", error.response?.data);
       this.clearTokens();
@@ -127,18 +111,38 @@ export const AuthService = {
   },
 
   setTokens(accessToken: string, refreshToken: string) {
-    Cookies.set("accessToken", accessToken, COOKIE_OPTIONS);
-    Cookies.set("refreshToken", refreshToken, COOKIE_OPTIONS);
+    Cookies.set(COOKIE_NAMES.ACCESS_TOKEN, accessToken, COOKIE_OPTIONS);
+    Cookies.set(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, COOKIE_OPTIONS);
+  },
+
+  setPdaData(pdaAddress: string, pdaBalance: string) {
+    Cookies.set(COOKIE_NAMES.PDA_ADDRESS, pdaAddress, COOKIE_OPTIONS);
+    Cookies.set(
+      COOKIE_NAMES.PDA_BALANCE,
+      pdaBalance.toString(),
+      COOKIE_OPTIONS
+    );
+  },
+
+  getPdaData() {
+    const pdaAddress = Cookies.get(COOKIE_NAMES.PDA_ADDRESS);
+    const pdaBalance = Cookies.get(COOKIE_NAMES.PDA_BALANCE);
+    return {
+      pdaAddress: pdaAddress || null,
+      pdaBalance: pdaBalance ? pdaBalance : null,
+    };
   },
 
   clearTokens() {
-    Cookies.remove("accessToken");
-    Cookies.remove("refreshToken");
+    Cookies.remove(COOKIE_NAMES.ACCESS_TOKEN);
+    Cookies.remove(COOKIE_NAMES.REFRESH_TOKEN);
+    Cookies.remove(COOKIE_NAMES.PDA_ADDRESS);
+    Cookies.remove(COOKIE_NAMES.PDA_BALANCE);
   },
 
   async refreshTokens(): Promise<boolean> {
     try {
-      const refreshToken = Cookies.get("refreshToken");
+      const refreshToken = Cookies.get(COOKIE_NAMES.REFRESH_TOKEN);
       if (!refreshToken) {
         console.log("No refresh token found");
         return false;
@@ -175,17 +179,19 @@ export const AuthService = {
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
-      this.setAuthState('unauthenticated');
+      this.setAuthState("unauthenticated");
       this.clearTokens();
-      useUserStore.getState().clearUser();
     }
   },
 
   getAccessToken(): string | undefined {
-    return Cookies.get("accessToken");
+    return Cookies.get(COOKIE_NAMES.ACCESS_TOKEN);
   },
 
   isAuthenticated(): boolean {
-    return Boolean(Cookies.get("accessToken") && Cookies.get("refreshToken"));
+    return Boolean(
+      Cookies.get(COOKIE_NAMES.ACCESS_TOKEN) &&
+        Cookies.get(COOKIE_NAMES.REFRESH_TOKEN)
+    );
   },
 };

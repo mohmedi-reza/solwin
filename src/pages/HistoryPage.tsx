@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Icon from '../components/icon/icon.component';
 import { UserService } from '../services/user.service';
 import { UserProfile } from '../types/user.interface';
+import { toast } from 'react-toastify';
 
 type TimeFilterType = '24h' | '7d' | '30d' | 'all';
 
@@ -13,23 +14,24 @@ const HistoryPage: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch user data
+  // Updated fetchUserData function
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!publicKey) return;
       setIsLoading(true);
       try {
-        const user = await UserService.getProfile();
-        setUserProfile(user);
+        const userData = await UserService.getProfile();
+        console.log('Fetched user data from history page:', userData); // Debug log
+        setUserProfile(userData);
       } catch (error) {
         console.error('Error fetching user data:', error);
+        toast.error('Failed to load transaction history');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchUserData();
-  }, [publicKey]);
+  }, []); // Removed publicKey dependency since we handle auth in api.service.ts
 
   if (!publicKey) {
     return (
@@ -51,8 +53,25 @@ const HistoryPage: React.FC = () => {
     );
   }
 
+  // Updated transactions filtering
   const transactions = userProfile?.transactions || [];
   const filteredTransactions = transactions.filter(tx => {
+    const txDate = new Date(tx.timestamp);
+    const now = new Date();
+    
+    // Apply time filter
+    switch (timeFilter) {
+      case '24h':
+        return now.getTime() - txDate.getTime() <= 24 * 60 * 60 * 1000;
+      case '7d':
+        return now.getTime() - txDate.getTime() <= 7 * 24 * 60 * 60 * 1000;
+      case '30d':
+        return now.getTime() - txDate.getTime() <= 30 * 24 * 60 * 60 * 1000;
+      default:
+        return true;
+    }
+  }).filter(tx => {
+    // Apply type filter
     if (activeTab === 'all') return true;
     if (activeTab === 'deposits') return tx.type === 'deposit';
     if (activeTab === 'withdrawals') return tx.type === 'withdraw';
@@ -60,17 +79,11 @@ const HistoryPage: React.FC = () => {
     return true;
   });
 
-  // Calculate stats
+  // Updated stats calculation using userProfile.balance
   const stats = {
-    totalDeposits: transactions
-      .filter(tx => tx.type === 'deposit')
-      .reduce((sum, tx) => sum + tx.amount, 0),
-    totalWithdrawals: transactions
-      .filter(tx => tx.type === 'withdraw')
-      .reduce((sum, tx) => sum + tx.amount, 0),
-    netGaming: transactions
-      .filter(tx => tx.type === 'win' || tx.type === 'bet')
-      .reduce((sum, tx) => sum + tx.amount, 0),
+    totalDeposits: userProfile?.balance?.totalDeposited || 0,
+    totalWithdrawals: userProfile?.balance?.totalWithdrawn || 0,
+    netGaming: userProfile?.stats?.netProfit || 0,
   };
 
   return (
@@ -107,7 +120,7 @@ const HistoryPage: React.FC = () => {
             <Icon name="wallet" className="text-3xl" />
           </div>
           <div className="stat-title">Total Deposits</div>
-          <div className="stat-value text-primary">{stats.totalDeposits.toFixed(2)} SOL</div>
+          <div className="stat-value text-primary">{stats.totalDeposits} SOL</div>
         </div>
 
         <div className="stat bg-base-200 rounded-2xl">
@@ -115,7 +128,7 @@ const HistoryPage: React.FC = () => {
             <Icon name="coin" className="text-3xl" />
           </div>
           <div className="stat-title">Total Withdrawals</div>
-          <div className="stat-value text-secondary">{stats.totalWithdrawals.toFixed(2)} SOL</div>
+          <div className="stat-value text-secondary">{stats.totalWithdrawals} SOL</div>
         </div>
 
         <div className="stat bg-base-200 rounded-2xl">
@@ -123,7 +136,7 @@ const HistoryPage: React.FC = () => {
             <Icon name="chart" className="text-3xl" />
           </div>
           <div className="stat-title">Net Gaming</div>
-          <div className="stat-value text-success">{stats.netGaming.toFixed(2)} SOL</div>
+          <div className="stat-value text-success">{stats.netGaming} SOL</div>
         </div>
 
         <div className="stat bg-base-200 rounded-2xl">

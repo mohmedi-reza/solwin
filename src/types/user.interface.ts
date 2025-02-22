@@ -60,7 +60,7 @@ export interface Transaction {
 export interface UserPda {
   pdaAddress: string;
   rentFee: number;
-  balance: number;
+  balance: string;
 }
 
 export interface CurrentMatch {
@@ -103,7 +103,7 @@ export interface UserPreferences {
 export interface UserBalance {
   available: number;
   locked: number;
-  pdaBalance: number;
+  pdaBalance: string;
   totalDeposited: number;
   totalWithdrawn: number;
 }

@@ -217,7 +217,7 @@ const GamePage: React.FC = () => {
               <div className="stat-title">Your Balance</div>
               {publicKey ? (
                 <>
-                  <div className="stat-value text-primary">{walletBalance?.toFixed(2) || '0'} SOL</div>
+                  <div className="stat-value text-primary">{walletBalance || '0'} SOL</div>
                   <div className="stat-desc">Ready to bet</div>
                 </>
               ) : (
@@ -601,7 +601,7 @@ const GamePage: React.FC = () => {
                       <div className="flex items-center justify-center gap-3">
                         <span className='text-4xl'>🤩</span>
                         <span className="text-3xl font-bold text-success">
-                          You Won ${(handResult.multiplier * bet * (1 + risk)).toFixed(2)}!
+                          You Won ${(handResult.multiplier * bet * (1 + risk))}!
                         </span>
                       </div>
                       <div className="stats bg-base-100 shadow inline-flex">
