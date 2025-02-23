@@ -1,15 +1,16 @@
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { AxiosError } from 'axios';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { AuthService, AuthState } from '../../services/auth.service';
+import { BalanceCacheService } from '../../services/balanceCache.service';
+import { UserService, WalletBalance } from '../../services/user.service';
 import AddressShort from '../AddressShort';
 import Icon from '../icon/icon.component';
 import { IconName } from '../icon/iconPack';
-import { UserService, WalletBalance } from '../../services/user.service';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 // Add new type for balance display
 type BalanceDisplay = 'pda' | 'wallet';
@@ -25,73 +26,23 @@ const Toolbar: React.FC = () => {
     const [authLoading, setAuthLoading] = useState(false);
     const [authState, setAuthState] = useState<AuthState>('unauthenticated');
     const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
+    const [isBalanceLoading, setIsBalanceLoading] = useState(false);
 
-    useEffect(() => {
-        let isMounted = true;
-
-        const fetchBalance = async () => {
-            if (!publicKey) return;
-            try {
-                const balance = await connection.getBalance(publicKey);
-                if (isMounted) setBalance(balance.toString());
-            } catch (error) {
-                console.error('Error fetching balance:', error);
-            }
-        };
-
-        fetchBalance();
-        if (publicKey) {
-            const id = connection.onAccountChange(publicKey, () => {
-                fetchBalance();
-            });
-
-            return () => {
-                isMounted = false;
-                connection.removeAccountChangeListener(id);
-            };
+    const fetchWalletBalance = useCallback(async () => {
+        if (!AuthService.isAuthenticated() || !wallet) return;
+        
+        setIsBalanceLoading(true);
+        try {
+            const balance = await UserService.getWalletBalance();
+            setWalletBalance(balance);
+            // Update cache
+            BalanceCacheService.setBalance(Number(balance.pdaBalance));
+        } catch (error) {
+            console.error('Error fetching wallet balance:', error);
+        } finally {
+            setIsBalanceLoading(false);
         }
-        return () => {
-            isMounted = false;
-        };
-    }, [publicKey, connection]);
-
-    useEffect(() => {
-        let isMounted = true;
-
-        const fetchWalletBalance = async () => {
-            if (!AuthService.isAuthenticated()) return;
-
-            try {
-                const balance = await UserService.getWalletBalance();
-                console.log('Wallet Balance from API:', balance); // Add this
-                if (isMounted) {
-                    setWalletBalance(balance);
-                    const currentPdaData = AuthService.getPdaData();
-                    if (currentPdaData.pdaAddress) {
-                        AuthService.setPdaData(currentPdaData.pdaAddress, balance.pdaBalance);
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching wallet balance:', error);
-            }
-        };
-
-        fetchWalletBalance();
-
-        // Set up an interval to refresh the balance
-        const intervalId = setInterval(fetchWalletBalance, 30000); // Refresh every 30 seconds
-
-        return () => {
-            isMounted = false;
-            clearInterval(intervalId);
-        };
-    }, [authState]);
-
-    useEffect(() => {
-        if (wallet && publicKey && !AuthService.isAuthenticated()) {
-            handleLogin();
-        }
-    }, [wallet, publicKey]);
+    }, [wallet]);
 
     const handleLogin = useCallback(async () => {
         if (!publicKey || !signMessage || authState === 'authenticating') return;
@@ -115,6 +66,7 @@ const Toolbar: React.FC = () => {
             if (success) {
                 setAuthState('authenticated');
                 toast.success('Successfully authenticated!');
+                await fetchWalletBalance();
             } else {
                 setAuthState('unauthenticated');
                 toast.error('Authentication failed');
@@ -131,13 +83,60 @@ const Toolbar: React.FC = () => {
         } finally {
             setAuthLoading(false);
         }
-    }, [publicKey, signMessage, authState]);
+    }, [publicKey, signMessage, authState, fetchWalletBalance]);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchBalance = async () => {
+            if (!publicKey || !wallet) return;
+            try {
+                const balance = await connection.getBalance(publicKey);
+                if (isMounted) setBalance(balance.toString());
+            } catch (error) {
+                console.error('Error fetching balance:', error);
+            }
+        };
+
+        if (publicKey && wallet) {
+            fetchBalance();
+            const id = connection.onAccountChange(publicKey, () => {
+                fetchBalance();
+            });
+
+            return () => {
+                isMounted = false;
+                connection.removeAccountChangeListener(id);
+            };
+        }
+
+        return () => {
+            isMounted = false;
+        };
+    }, [publicKey, connection, wallet]);
+
+    useEffect(() => {
+        const authState = AuthService.getAuthState();
+        setAuthState(authState);
+    }, []);
+
+    useEffect(() => {
+        if (wallet && publicKey && !AuthService.isAuthenticated() && !authLoading) {
+            handleLogin();
+        }
+    }, [wallet, publicKey]);
 
     const handleDisconnect = useCallback(async () => {
+        // First logout from backend
         await AuthService.logout();
-        // Clear all local storage
+        // Clear all storage
         localStorage.clear();
+        sessionStorage.clear();
+        // Clear balance cache
+        BalanceCacheService.clearCache();
+        // Disconnect wallet
         disconnect();
+        // Reset states
         setAuthState('unauthenticated');
         setBalance(null);
         setWalletBalance(null);
@@ -215,14 +214,18 @@ const Toolbar: React.FC = () => {
                                 <div className="dropdown dropdown-end">
                                     <div tabIndex={0} role="button" className="bg-base-200 flex gap-1 sm:flex items-center text-base-content/70 hover:text-base-content cursor-pointer p-2 rounded-lg hover:bg-base-200">
                                         <Icon name={getBalanceDisplay().icon as IconName} className={`${getBalanceDisplay().iconClass} text-lg`} />
-                                        <p className='flex gap-2'>
-                                            <span>
-                                                {selectedBalance === 'pda'
-                                                    ? Number(walletBalance?.pdaBalance ?? '0').toFixed(4)
-                                                    : (Number(balance) / LAMPORTS_PER_SOL).toFixed(4)}
-                                            </span>
-                                            <span>SOL</span>
-                                        </p>
+                                        {isBalanceLoading ? (
+                                            <span className="loading loading-spinner loading-sm"></span>
+                                        ) : (
+                                            <p className='flex gap-2'>
+                                                <span>
+                                                    {selectedBalance === 'pda'
+                                                        ? Number(walletBalance?.pdaBalance ?? '0').toFixed(4)
+                                                        : (Number(balance) / LAMPORTS_PER_SOL).toFixed(4)}
+                                                </span>
+                                                <span>SOL</span>
+                                            </p>
+                                        )}
                                         <Icon name="arrowSquareDown" className="text-white text-sm opacity-50" />
                                     </div>
                                     <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-200 rounded-box w-fit">
@@ -304,14 +307,6 @@ const Toolbar: React.FC = () => {
                                                 {copied ? 'Copied' : 'Copy Address'}
                                             </button>
                                         </li>
-                                        {!AuthService.isAuthenticated() && (
-                                            <li>
-                                                <button onClick={handleLogin} className="flex items-center gap-2">
-                                                    <Icon name="login" className="text-lg" />
-                                                    {authLoading ? 'Authenticating...' : 'Login'}
-                                                </button>
-                                            </li>
-                                        )}
                                         <li>
                                             <button onClick={() => setVisible(true)} className="flex items-center gap-2">
                                                 <Icon name="refresh" className="text-lg" />

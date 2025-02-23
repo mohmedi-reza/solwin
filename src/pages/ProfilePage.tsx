@@ -1,11 +1,12 @@
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import AddressShort from '../components/AddressShort';
 import Icon from '../components/icon/icon.component';
+import WalletModal from '../components/WalletModal';
 import { UserService } from '../services/user.service';
 import { UserProfile } from '../types/user.interface';
-import WalletModal from '../components/WalletModal';
+import { BalanceCacheService } from '../services/balanceCache.service';
 
 const ProfilePage: React.FC = () => {
   const { publicKey } = useWallet();
@@ -54,6 +55,22 @@ const ProfilePage: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [connection, publicKey]);
 
+  // Add effect to listen for balance updates
+  useEffect(() => {
+    const unsubscribe = BalanceCacheService.subscribe(async () => {
+      if (publicKey) {
+        try {
+          const user = await UserService.getProfile();
+          setUserProfile(user);
+        } catch (error) {
+          console.error('Error refreshing data:', error);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [publicKey]);
+
   const copyAddress = async () => {
     if (publicKey) {
       await navigator.clipboard.writeText(publicKey.toBase58());
@@ -63,13 +80,18 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleWalletOperationSuccess = useCallback(async () => {
-    // Refresh user profile and wallet balance
     if (publicKey) {
       try {
+        // Fetch updated user profile (includes transactions)
         const user = await UserService.getProfile();
         setUserProfile(user);
+
+        // Update wallet balance
         const balance = await connection.getBalance(publicKey);
         setWalletBalance(balance / LAMPORTS_PER_SOL);
+
+        // Update cache
+        BalanceCacheService.setBalance(Number(user.balance.pdaBalance));
       } catch (error) {
         console.error('Error refreshing data:', error);
       }
@@ -151,9 +173,13 @@ const ProfilePage: React.FC = () => {
                 <div className="stat-title">Wallet Balance</div>
                 <div className="stat-value text-primary">{walletBalance?.toFixed(4) || '0'} SOL</div>
                 <div className="stat-desc">Updated just now</div>
-                <button className="btn btn-primary  mt-4  relative">
+                <button
+                  className="btn btn-primary mt-4 relative"
+                  onClick={() => setIsWalletModalOpen(true)}
+                >
                   <span className='status status-error size-2 animate-ping'></span>
-                  Deposit To Games</button>
+                  Deposit To Games
+                </button>
               </div>
             </div>
           </div>
@@ -168,7 +194,7 @@ const ProfilePage: React.FC = () => {
             <div className="stat-title">PDA Balance</div>
             <div className="stat-value text-success">{userProfile?.balance.pdaBalance || '0'} <span className='text-sm text-base-content'>SOL</span></div>
             <div className="stat-desc">Your game balance</div>
-            <button 
+            <button
               className="btn btn-primary mt-4 relative"
               onClick={() => setIsWalletModalOpen(true)}
             >
@@ -294,7 +320,6 @@ const ProfilePage: React.FC = () => {
         isOpen={isWalletModalOpen}
         onClose={() => setIsWalletModalOpen(false)}
         walletBalance={walletBalance || 0}
-        pdaBalance={userProfile?.balance.pdaBalance || '0'}
         onSuccess={handleWalletOperationSuccess}
       />
     </>

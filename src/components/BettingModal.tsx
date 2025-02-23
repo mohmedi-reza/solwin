@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import Icon from './icon/icon.component';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { UserService } from '../services/user.service';
+import React, { useEffect, useState } from 'react';
 import { AuthService } from '../services/auth.service';
+import { UserService } from '../services/user.service';
+import Icon from './icon/icon.component';
+import { toast } from 'react-toastify';
+import { BalanceCacheService } from '../services/balanceCache.service';
 
 interface BettingModalProps {
   isOpen: boolean;
@@ -40,24 +42,30 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm 
     const fetchBalances = async () => {
       if (publicKey && AuthService.isAuthenticated()) {
         try {
-          // Get PDA balance
+          // Get fresh balance
           const balance = await UserService.getWalletBalance();
           setPdaBalance(Number(balance.pdaBalance));
+
+          // Update cache
+          BalanceCacheService.setBalance(Number(balance.pdaBalance));
 
           // Get wallet balance
           const solBalance = await connection.getBalance(publicKey);
           setWalletBalance(solBalance / LAMPORTS_PER_SOL);
         } catch (error) {
           console.error('Error fetching balances:', error);
+          setError('Failed to fetch balances');
         }
+      } else {
+        onClose();
+        toast.error('Please connect your wallet first');
       }
     };
 
-    fetchBalances();
-    const intervalId = setInterval(fetchBalances, 20000);
-
-    return () => clearInterval(intervalId);
-  }, [connection, publicKey]);
+    if (isOpen) {
+      fetchBalances();
+    }
+  }, [isOpen, connection, publicKey, onClose]);
 
   useEffect(() => {
     const maxWin = bet * 50 * (1 + risk);
@@ -68,19 +76,32 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm 
   const isValidBet = bet >= 0.05 && !isInsufficientBalance;
 
   const handleConfirm = () => {
+    console.log('handleConfirm called with:', { bet, risk, pdaBalance });
+
     if (!pdaBalance) {
       setError("Could not fetch game balance");
+      console.error('No PDA balance available');
       return false;
     }
+
     if (isInsufficientBalance) {
       setError("Insufficient game balance");
+      console.error('Insufficient balance:', { bet, pdaBalance });
       return false;
     }
+
     if (bet < 0.05) {
       setError("Minimum bet is 0.05 SOL");
+      console.error('Bet too small:', bet);
       return false;
     }
+
+    // Call onConfirm first
+    console.log('Calling onConfirm with:', { bet, risk });
     onConfirm(bet, risk);
+
+    // Close the modal
+    onClose();
     return true;
   };
 
@@ -192,18 +213,18 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm 
             <span>Safer</span>
             <span>Riskier</span>
           </div>
-        {/* Risk Level Quick Presets */}
-        <div className="grid grid-cols-4 gap-2">
-          {riskPresets.map((preset, index) => (
-            <button
-              key={index}
-              onClick={() => setRisk(preset.value)}
-              className={`btn btn-sm ${risk === preset.value ? 'btn-primary' : 'btn-outline'}`}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
+          {/* Risk Level Quick Presets */}
+          <div className="grid grid-cols-4 gap-2">
+            {riskPresets.map((preset, index) => (
+              <button
+                key={index}
+                onClick={() => setRisk(preset.value)}
+                className={`btn btn-sm ${risk === preset.value ? 'btn-primary' : 'btn-outline'}`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Potential Winnings */}
@@ -235,15 +256,9 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm 
           </button>
 
           <button
-            onClick={() => {
-              const success = handleConfirm();
-              if (success) {
-                onClose();
-              }
-            }}
+            onClick={handleConfirm}
             disabled={!isValidBet}
-            className={`btn btn-primary flex-1 gap-2 py-3 ${!isValidBet ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+            className={`btn btn-primary flex-1 gap-2 py-3 ${!isValidBet ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <Icon name="game" className="text-xl" />
             Place Bet & Play

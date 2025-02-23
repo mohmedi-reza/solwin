@@ -8,6 +8,8 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { UserService } from '../services/user.service';
 import { AuthService } from '../services/auth.service';
+import { BalanceCacheService } from '../services/balanceCache.service';
+import WalletModal from '../components/WalletModal';
 
 const game = new PokerGame();
 
@@ -17,7 +19,7 @@ interface ShufflingCard extends Card {
 
 const GamePage: React.FC = () => {
   const navigate = useNavigate();
-  const { publicKey } = useWallet();
+  const { publicKey, wallet } = useWallet();
   const { connection } = useConnection();
   const [showBettingModal, setShowBettingModal] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -34,6 +36,7 @@ const GamePage: React.FC = () => {
   const [isRulesOpen, setIsRulesOpen] = useState(true);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [pdaBalance, setPdaBalance] = useState<number>(0);
+  const [showWalletModal, setShowWalletModal] = useState(false);
 
   const rulesRef = useRef<HTMLDivElement>(null);
 
@@ -42,39 +45,48 @@ const GamePage: React.FC = () => {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const getBalance = async () => {
-      if (publicKey) {
-        try {
-          const balance = await connection.getBalance(publicKey);
-          setWalletBalance(balance / LAMPORTS_PER_SOL);
-        } catch (error) {
-          console.error('Error fetching balance:', error);
-        }
+      if (!publicKey || !wallet) return;
+      try {
+        const balance = await connection.getBalance(publicKey);
+        if (isMounted) setWalletBalance(balance / LAMPORTS_PER_SOL);
+      } catch (error) {
+        console.error('Error fetching balance:', error);
       }
     };
 
-    getBalance();
-    const intervalId = setInterval(getBalance, 20000);
+    if (publicKey && wallet) {
+      getBalance();
+      const id = connection.onAccountChange(publicKey, () => {
+        getBalance();
+      });
 
-    return () => clearInterval(intervalId);
-  }, [connection, publicKey]);
+      return () => {
+        isMounted = false;
+        connection.removeAccountChangeListener(id);
+      };
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [connection, publicKey, wallet]);
 
   useEffect(() => {
-    const fetchPdaBalance = async () => {
+    const unsubscribe = BalanceCacheService.subscribe(async () => {
       if (publicKey && AuthService.isAuthenticated()) {
         try {
           const balance = await UserService.getWalletBalance();
           setPdaBalance(Number(balance.pdaBalance));
         } catch (error) {
-          console.error('Error fetching PDA balance:', error);
+          console.error('Error refreshing balance:', error);
         }
       }
-    };
+    });
 
-    fetchPdaBalance();
-    const intervalId = setInterval(fetchPdaBalance, 20000);
-
-    return () => clearInterval(intervalId);
+    return () => unsubscribe();
   }, [publicKey]);
 
   useEffect(() => {
@@ -113,29 +125,52 @@ const GamePage: React.FC = () => {
     }
   }, [isDrawing]);
 
+  const handleWalletSuccess = useCallback(async () => {
+    if (publicKey && AuthService.isAuthenticated()) {
+      try {
+        // Fetch updated PDA balance
+        const balance = await UserService.getWalletBalance();
+        setPdaBalance(Number(balance.pdaBalance));
+        
+        // Update wallet balance
+        const solBalance = await connection.getBalance(publicKey);
+        setWalletBalance(solBalance / LAMPORTS_PER_SOL);
+        
+        // Update cache
+        BalanceCacheService.setBalance(Number(balance.pdaBalance));
+      } catch (error) {
+        console.error('Error refreshing balances:', error);
+      }
+    }
+  }, [publicKey, connection]);
+
   const handleStartGame = () => {
-    setShowBettingModal(true);
+    if (!pdaBalance || pdaBalance <= 0) {
+      setShowWalletModal(true);
+    } else {
+      setShowBettingModal(true);
+    }
   };
 
   const handleBetConfirm = useCallback(async (newBet: number, newRisk: number) => {
-    if (!pdaBalance || newBet > pdaBalance) {
-      // Show error toast or message
-      return;
-    }
-
     try {
       setShowBettingModal(false);
       setIsDrawing(true);
       setBet(newBet);
       setRisk(newRisk);
 
+      console.log('Starting game with:', { newBet, newRisk });
       const gameResult = await game.playHand(newBet, newRisk);
+      console.log('Game result:', gameResult);
 
       setTimeout(() => {
         setIsDrawing(false);
         setCurrentHand(gameResult.hand);
         setHandResult(gameResult.result);
-        setPdaBalance(prev => prev + gameResult.winnings);
+        const newBalance = pdaBalance + gameResult.winnings;
+        setPdaBalance(newBalance);
+        // Update cache with new balance
+        BalanceCacheService.setBalance(newBalance);
       }, 5000);
 
     } catch (error) {
@@ -189,18 +224,33 @@ const GamePage: React.FC = () => {
               <div className="flex flex-col items-center gap-6 mt-8">
                 <div className="relative group">
                   <div className="absolute -inset-1 bg-gradient-to-r from-primary via-secondary to-primary rounded-2xl blur-lg group-hover:blur-xl transition-all"></div>
-                  <button
-                    onClick={handleStartGame}
-                    className="relative text-nowrap btn btn-primary btn-lg text-xl px-4 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
-                  >
-                    <Icon name="game" className="text-3xl" />
-                    Place Your Bet & Play Now
-                    <div className="absolute top-0 right-0 -mt-2 -mr-2">
-                      <span className="relative flex h-4 w-4">
-                        <span className="animate-ping absolute inline-flex status status-error size-3"></span>
-                      </span>
-                    </div>
-                  </button>
+                  {!pdaBalance || pdaBalance <= 0 ? (
+                    <button
+                      onClick={handleStartGame}
+                      className="relative text-nowrap btn btn-primary btn-lg text-xl px-4 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
+                    >
+                      <Icon name="wallet" className="text-3xl" />
+                      Deposit to Start Playing
+                      <div className="absolute top-0 right-0 -mt-2 -mr-2">
+                        <span className="relative flex h-4 w-4">
+                          <span className="animate-ping absolute inline-flex status status-error size-3"></span>
+                        </span>
+                      </div>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleStartGame}
+                      className="relative text-nowrap btn btn-primary btn-lg text-xl px-4 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
+                    >
+                      <Icon name="game" className="text-3xl" />
+                      Place Your Bet & Play Now
+                      <div className="absolute top-0 right-0 -mt-2 -mr-2">
+                        <span className="relative flex h-4 w-4">
+                          <span className="animate-ping absolute inline-flex status status-error size-3"></span>
+                        </span>
+                      </div>
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-4 text-base-content/60">
@@ -742,7 +792,15 @@ const GamePage: React.FC = () => {
           </div>
         )}
 
-        {/* Betting Modal */}
+        {/* Add WalletModal */}
+        <WalletModal
+          isOpen={showWalletModal}
+          onClose={() => setShowWalletModal(false)}
+          walletBalance={walletBalance || 0}
+          onSuccess={handleWalletSuccess}
+        />
+
+        {/* Existing BettingModal */}
         <BettingModal
           isOpen={showBettingModal}
           onClose={() => setShowBettingModal(false)}

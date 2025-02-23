@@ -1,6 +1,9 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Icon from "../components/icon/icon.component";
+import WalletModal from "../components/WalletModal";
 
 interface GameCardStats {
   minBet: number;
@@ -19,6 +22,11 @@ interface GameCard {
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const { publicKey } = useWallet();
+  const { connection } = useConnection();
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+
   const gameCards: GameCard[] = [
     {
       id: 1,
@@ -85,6 +93,34 @@ const HomePage: React.FC = () => {
       ? gameCards
       : gameCards.filter((card) => card.status === selectedFilter);
 
+  // Add effect to fetch wallet balance
+  useEffect(() => {
+    const getBalance = async () => {
+      if (publicKey) {
+        try {
+          const balance = await connection.getBalance(publicKey);
+          setWalletBalance(balance / LAMPORTS_PER_SOL);
+        } catch (error) {
+          console.error('Error fetching balance:', error);
+        }
+      }
+    };
+
+    getBalance();
+  }, [connection, publicKey]);
+
+  // Add handler for wallet operation success
+  const handleWalletOperationSuccess = async () => {
+    if (publicKey) {
+      try {
+        const balance = await connection.getBalance(publicKey);
+        setWalletBalance(balance / LAMPORTS_PER_SOL);
+      } catch (error) {
+        console.error('Error refreshing balance:', error);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <div className="container mx-auto">
@@ -120,15 +156,23 @@ const HomePage: React.FC = () => {
                 <p className="text-base text-base-content/70 backdrop-blur-sm font-medium">
                   Experience the thrill of poker with instant payouts and up to 50x multipliers
                 </p>
-                <Link
-                  to="/game"
-                  className="btn btn-primary gap-2 px-6 group relative hover:scale-105 transition-all shadow-[0_4px_12px_rgba(var(--primary),0.25)] hover:shadow-[0_6px_16px_rgba(var(--primary),0.35)]"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary via-secondary to-primary opacity-0 group-hover:opacity-20 transition-opacity rounded-lg"></div>
-                  <Icon name="game" className="text-xl group-hover:rotate-12 transition-transform" />
-                  <span className="font-bold">Play Now</span>
-                  <div className="absolute -top-1 -right-1 status status-error size-2 animate-ping"></div>
-                </Link>
+                <div className="flex gap-3">
+                  <Link
+                    to="/game"
+                    className="btn btn-primary gap-2 px-6 group relative hover:scale-105 transition-all shadow-[0_4px_12px_rgba(var(--primary),0.25)] hover:shadow-[0_6px_16px_rgba(var(--primary),0.35)]"
+                  >
+                    <Icon name="game" className="text-xl group-hover:rotate-12 transition-transform" />
+                    <span className="font-bold">Play Now</span>
+                  </Link>
+                  <button
+                    onClick={() => setIsWalletModalOpen(true)}
+                    className="btn btn-primary btn-outline gap-2 px-6 group relative hover:scale-105 transition-all"
+                  >
+                    <Icon name="wallet" className="text-xl group-hover:rotate-12 transition-transform" />
+                    <span className="font-bold">Deposit</span>
+                    <span className="absolute -top-1 -right-1 status status-error size-2 animate-ping"></span>
+                  </button>
+                </div>
               </div>
 
               {/* Right Side Stats - Stack on mobile */}
@@ -274,6 +318,14 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Add WalletModal */}
+      <WalletModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        walletBalance={walletBalance}
+        onSuccess={handleWalletOperationSuccess}
+      />
     </div>
   );
 };
