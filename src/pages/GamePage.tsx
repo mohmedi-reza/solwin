@@ -37,6 +37,8 @@ const GamePage: React.FC = () => {
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [pdaBalance, setPdaBalance] = useState<number>(0);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
 
   const rulesRef = useRef<HTMLDivElement>(null);
 
@@ -74,19 +76,35 @@ const GamePage: React.FC = () => {
     };
   }, [connection, publicKey, wallet]);
 
-  useEffect(() => {
-    const unsubscribe = BalanceCacheService.subscribe(async () => {
-      if (publicKey && AuthService.isAuthenticated()) {
-        try {
-          const balance = await UserService.getWalletBalance();
-          setPdaBalance(Number(balance.pdaBalance));
-        } catch (error) {
-          console.error('Error refreshing balance:', error);
-        }
-      }
-    });
+  const fetchPdaBalance = async () => {
+    setIsLoadingBalance(true);
+    setBalanceError(null);
 
-    return () => unsubscribe();
+    try {
+      // First check cookies
+      const pdaData = AuthService.getPdaData();
+      if (pdaData.pdaBalance) {
+        setPdaBalance(Number(pdaData.pdaBalance));
+        return;
+      }
+
+      // If no cookie data, fetch from API
+      const balance = await UserService.getWalletBalance();
+      setPdaBalance(Number(balance.pdaBalance));
+      BalanceCacheService.setBalance(Number(balance.pdaBalance));
+
+    } catch (error) {
+      console.error('Error fetching PDA balance:', error);
+      setBalanceError('Failed to load game balance');
+    } finally {
+      setIsLoadingBalance(false);
+    }
+  };
+
+  useEffect(() => {
+    if (publicKey && AuthService.isAuthenticated()) {
+      fetchPdaBalance();
+    }
   }, [publicKey]);
 
   useEffect(() => {
@@ -131,11 +149,11 @@ const GamePage: React.FC = () => {
         // Fetch updated PDA balance
         const balance = await UserService.getWalletBalance();
         setPdaBalance(Number(balance.pdaBalance));
-        
+
         // Update wallet balance
         const solBalance = await connection.getBalance(publicKey);
         setWalletBalance(solBalance / LAMPORTS_PER_SOL);
-        
+
         // Update cache
         BalanceCacheService.setBalance(Number(balance.pdaBalance));
       } catch (error) {
@@ -145,11 +163,21 @@ const GamePage: React.FC = () => {
   }, [publicKey, connection]);
 
   const handleStartGame = () => {
-    if (!pdaBalance || pdaBalance <= 0) {
-      setShowWalletModal(true);
-    } else {
-      setShowBettingModal(true);
+    if (isLoadingBalance) {
+      return; // Do nothing while loading
     }
+
+    if (balanceError) {
+      fetchPdaBalance(); // Retry loading on error
+      return;
+    }
+
+    if (!pdaBalance || pdaBalance < 0.1) {
+      setShowWalletModal(true);
+      return;
+    }
+
+    setShowBettingModal(true);
   };
 
   const handleBetConfirm = useCallback(async (newBet: number, newRisk: number) => {
@@ -224,33 +252,43 @@ const GamePage: React.FC = () => {
               <div className="flex flex-col items-center gap-6 mt-8">
                 <div className="relative group">
                   <div className="absolute -inset-1 bg-gradient-to-r from-primary via-secondary to-primary rounded-2xl blur-lg group-hover:blur-xl transition-all"></div>
-                  {!pdaBalance || pdaBalance <= 0 ? (
-                    <button
-                      onClick={handleStartGame}
-                      className="relative text-nowrap btn btn-primary btn-lg text-xl px-4 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
-                    >
-                      <Icon name="wallet" className="text-3xl" />
-                      Deposit to Start Playing
-                      <div className="absolute top-0 right-0 -mt-2 -mr-2">
-                        <span className="relative flex h-4 w-4">
-                          <span className="animate-ping absolute inline-flex status status-error size-3"></span>
-                        </span>
-                      </div>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleStartGame}
-                      className="relative text-nowrap btn btn-primary btn-lg text-xl px-4 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
-                    >
-                      <Icon name="game" className="text-3xl" />
-                      Place Your Bet & Play Now
-                      <div className="absolute top-0 right-0 -mt-2 -mr-2">
-                        <span className="relative flex h-4 w-4">
-                          <span className="animate-ping absolute inline-flex status status-error size-3"></span>
-                        </span>
-                      </div>
-                    </button>
-                  )}
+                  <button
+                    onClick={handleStartGame}
+                    className="relative text-nowrap btn btn-primary btn-lg text-xl px-4 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
+                    disabled={isLoadingBalance}
+                  >
+                    {isLoadingBalance ? (
+                      <>
+                        <span className="loading loading-spinner"></span>
+                        Loading Balance...
+                      </>
+                    ) : balanceError ? (
+                      <>
+                        <Icon name="refresh" />
+                        Retry Loading Balance
+                      </>
+                    ) : !pdaBalance || pdaBalance < 0.1 ? (
+                      <>
+                        <Icon name="wallet" className="text-3xl" />
+                        Deposit to Start Playing
+                        <div className="absolute top-0 right-0 -mt-2 -mr-2">
+                          <span className="relative flex h-4 w-4">
+                            <span className="animate-ping absolute inline-flex status status-error size-3"></span>
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="game" className="text-3xl" />
+                        Place Your Bet & Play Now
+                        <div className="absolute top-0 right-0 -mt-2 -mr-2">
+                          <span className="relative flex h-4 w-4">
+                            <span className="animate-ping absolute inline-flex status status-error size-3"></span>
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-4 text-base-content/60">

@@ -1,3 +1,5 @@
+import { UserService } from './user.service';
+
 interface BalanceCache {
   pdaBalance: number;
   lastUpdated: number;
@@ -32,14 +34,26 @@ export class BalanceCacheService {
       pdaAddress
     };
 
-    // Execute all listeners in sequence
-    for (const listener of this.listeners) {
+    // Execute all listeners in sequence with delay to prevent race conditions
+    await Promise.all(this.listeners.map(async (listener) => {
       try {
+        await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
         await listener();
       } catch (error) {
         console.error('Error in balance listener:', error);
       }
-    }
+    }));
+  }
+
+  static async refreshAllData() {
+    // Execute all listeners to force refresh
+    await Promise.all(this.listeners.map(async (listener) => {
+      try {
+        await listener();
+      } catch (error) {
+        console.error('Error refreshing data:', error);
+      }
+    }));
   }
 
   static isCacheValid(): boolean {
@@ -55,4 +69,28 @@ export class BalanceCacheService {
     // Notify listeners of cache clear
     this.listeners.forEach(listener => listener());
   }
-} 
+
+  static async updateAllData() {
+    try {
+      // Fetch fresh user profile data
+      const userProfile = await UserService.getProfile();
+      
+      // Update cache with new balance
+      await this.setBalance(Number(userProfile.balance.pdaBalance));
+      
+      // Execute all listeners to update components
+      await Promise.all(this.listeners.map(async (listener) => {
+        try {
+          await listener();
+        } catch (error) {
+          console.error('Error in listener:', error);
+        }
+      }));
+
+      return userProfile;
+    } catch (error) {
+      console.error('Error updating data:', error);
+      throw error;
+    }
+  }
+}

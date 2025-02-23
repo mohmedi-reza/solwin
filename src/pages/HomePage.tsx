@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Icon from "../components/icon/icon.component";
 import WalletModal from "../components/WalletModal";
+import { BalanceCacheService } from '../services/balanceCache.service';
 
 interface GameCardStats {
   minBet: number;
@@ -95,19 +96,25 @@ const HomePage: React.FC = () => {
 
   // Add effect to fetch wallet balance
   useEffect(() => {
-    const getBalance = async () => {
+    const fetchAndUpdateBalance = async () => {
       if (publicKey) {
         try {
           const balance = await connection.getBalance(publicKey);
           setWalletBalance(balance / LAMPORTS_PER_SOL);
         } catch (error) {
-          console.error('Error fetching balance:', error);
+          console.error('Error refreshing balance:', error);
         }
       }
     };
 
-    getBalance();
-  }, [connection, publicKey]);
+    // Initial fetch
+    fetchAndUpdateBalance();
+    
+    // Subscribe to balance updates
+    const unsubscribe = BalanceCacheService.subscribe(fetchAndUpdateBalance);
+    
+    return () => unsubscribe();
+  }, [publicKey, connection]);
 
   // Add handler for wallet operation success
   const handleWalletOperationSuccess = async () => {

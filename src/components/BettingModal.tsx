@@ -2,10 +2,9 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import React, { useEffect, useState } from 'react';
 import { AuthService } from '../services/auth.service';
+import { BalanceCacheService } from '../services/balanceCache.service';
 import { UserService } from '../services/user.service';
 import Icon from './icon/icon.component';
-import { toast } from 'react-toastify';
-import { BalanceCacheService } from '../services/balanceCache.service';
 
 interface BettingModalProps {
   isOpen: boolean;
@@ -39,33 +38,26 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm 
   ];
 
   useEffect(() => {
-    const fetchBalances = async () => {
+    const fetchAndUpdateBalances = async () => {
       if (publicKey && AuthService.isAuthenticated()) {
         try {
-          // Get fresh balance
           const balance = await UserService.getWalletBalance();
           setPdaBalance(Number(balance.pdaBalance));
-
-          // Update cache
-          BalanceCacheService.setBalance(Number(balance.pdaBalance));
-
-          // Get wallet balance
+          
           const solBalance = await connection.getBalance(publicKey);
           setWalletBalance(solBalance / LAMPORTS_PER_SOL);
         } catch (error) {
-          console.error('Error fetching balances:', error);
-          setError('Failed to fetch balances');
+          console.error('Error refreshing balances:', error);
         }
-      } else {
-        onClose();
-        toast.error('Please connect your wallet first');
       }
     };
 
     if (isOpen) {
-      fetchBalances();
+      fetchAndUpdateBalances();
+      const unsubscribe = BalanceCacheService.subscribe(fetchAndUpdateBalances);
+      return () => unsubscribe();
     }
-  }, [isOpen, connection, publicKey, onClose]);
+  }, [isOpen, publicKey, connection]);
 
   useEffect(() => {
     const maxWin = bet * 50 * (1 + risk);

@@ -129,17 +129,12 @@ const WalletModal: React.FC<WalletModalProps> = ({
     try {
       const success = await WalletService.deposit(amount);
       if (success) {
+        // Update all data and components
+        await BalanceCacheService.updateAllData();
+        
+        // Show success message and close
         toast.success(`Successfully deposited ${amount.toFixed(4)} SOL`);
         setAmount(0);
-        
-        // Fetch fresh data
-        const user = await UserService.getProfile();
-        setPdaBalance(user.balance.pdaBalance);
-        
-        // Update cache and broadcast to all components
-        BalanceCacheService.setBalance(Number(user.balance.pdaBalance));
-        
-        // Close modal and notify parent
         onClose();
         onSuccess();
       }
@@ -168,17 +163,12 @@ const WalletModal: React.FC<WalletModalProps> = ({
     try {
       const response = await WalletService.withdraw(amount);
       if (response.success) {
+        // Update all data and components
+        await BalanceCacheService.updateAllData();
+        
+        // Show success message and close
         toast.success(`Successfully withdrew ${amount.toFixed(4)} SOL`);
         setAmount(0);
-        
-        // Fetch fresh data
-        const user = await UserService.getProfile();
-        setPdaBalance(user.balance.pdaBalance);
-        
-        // Update cache and broadcast to all components
-        BalanceCacheService.setBalance(Number(user.balance.pdaBalance));
-        
-        // Close modal and notify parent
         onClose();
         onSuccess();
       }

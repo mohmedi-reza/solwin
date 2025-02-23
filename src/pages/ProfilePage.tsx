@@ -57,19 +57,28 @@ const ProfilePage: React.FC = () => {
 
   // Add effect to listen for balance updates
   useEffect(() => {
-    const unsubscribe = BalanceCacheService.subscribe(async () => {
+    const fetchAndUpdateData = async () => {
       if (publicKey) {
         try {
           const user = await UserService.getProfile();
           setUserProfile(user);
+          
+          const balance = await connection.getBalance(publicKey);
+          setWalletBalance(balance / LAMPORTS_PER_SOL);
         } catch (error) {
           console.error('Error refreshing data:', error);
         }
       }
-    });
+    };
 
+    // Initial fetch
+    fetchAndUpdateData();
+    
+    // Subscribe to balance updates
+    const unsubscribe = BalanceCacheService.subscribe(fetchAndUpdateData);
+    
     return () => unsubscribe();
-  }, [publicKey]);
+  }, [publicKey, connection]);
 
   const copyAddress = async () => {
     if (publicKey) {

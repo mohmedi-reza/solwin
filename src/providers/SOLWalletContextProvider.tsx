@@ -21,17 +21,16 @@ import {
   createDefaultWalletNotFoundHandler,
   SolanaMobileWalletAdapter,
 } from '@solana-mobile/wallet-adapter-mobile'
+import { clusterApiUrl } from '@solana/web3.js'
+import '@solana/wallet-adapter-react-ui/styles.css'
 
 interface WalletContextProviderProps {
   children: ReactNode
 }
 
 const WalletContextProvider = ({ children }: WalletContextProviderProps) => {
-  const network = import.meta.env.VITE_IS_MAINNET
-    ? WalletAdapterNetwork.Mainnet
-    : WalletAdapterNetwork.Devnet
-
-  const endpoint = import.meta.env.VITE_IS_MAINNET ? import.meta.env.VITE_RPC_URL : import.meta.env.VITE_TEST_RPC_URL
+  const network = WalletAdapterNetwork.Devnet
+  const endpoint = useMemo(() => clusterApiUrl(network), [network])
 
   const wallets = useMemo(
     () => [

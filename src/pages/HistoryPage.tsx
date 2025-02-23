@@ -115,7 +115,7 @@ const HistoryPage: React.FC = () => {
   useEffect(() => {
     if (!publicKey) return;
 
-    const unsubscribe = BalanceCacheService.subscribe(async () => {
+    const fetchAndUpdateData = async () => {
       try {
         setIsLoading(true);
         const userData = await UserService.getProfile();
@@ -125,7 +125,13 @@ const HistoryPage: React.FC = () => {
       } finally {
         setIsLoading(false);
       }
-    });
+    };
+
+    // Initial fetch
+    fetchAndUpdateData();
+
+    // Subscribe to updates
+    const unsubscribe = BalanceCacheService.subscribe(fetchAndUpdateData);
 
     return () => unsubscribe();
   }, [publicKey]);

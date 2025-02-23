@@ -30,9 +30,23 @@ const Toolbar: React.FC = () => {
 
     const fetchWalletBalance = useCallback(async () => {
         if (!AuthService.isAuthenticated() || !wallet) return;
-        
+
         setIsBalanceLoading(true);
         try {
+            // Check cache first
+            const cachedBalance = BalanceCacheService.getBalance();
+            if (BalanceCacheService.isCacheValid()) {
+                setWalletBalance({
+                    pdaBalance: String(cachedBalance.pdaBalance),
+                    available: Number(cachedBalance.pdaBalance),
+                    locked: 0,
+                    totalDeposited: 0,
+                    totalWithdrawn: 0
+                });
+                return;
+            }
+
+            // Cache invalid or empty, fetch fresh balance
             const balance = await UserService.getWalletBalance();
             setWalletBalance(balance);
             // Update cache
@@ -44,7 +58,7 @@ const Toolbar: React.FC = () => {
         }
     }, [wallet]);
 
-    const handleLogin = useCallback(async () => {
+    const handleLogin = async () => {
         if (!publicKey || !signMessage || authState === 'authenticating') return;
 
         setAuthLoading(true);
@@ -67,6 +81,12 @@ const Toolbar: React.FC = () => {
                 setAuthState('authenticated');
                 toast.success('Successfully authenticated!');
                 await fetchWalletBalance();
+                // Force a balance refresh
+                const balance = await UserService.getWalletBalance();
+                if (balance) {
+                    setWalletBalance(balance);
+                    BalanceCacheService.setBalance(Number(balance.pdaBalance));
+                }
             } else {
                 setAuthState('unauthenticated');
                 toast.error('Authentication failed');
@@ -83,7 +103,7 @@ const Toolbar: React.FC = () => {
         } finally {
             setAuthLoading(false);
         }
-    }, [publicKey, signMessage, authState, fetchWalletBalance]);
+    };
 
     useEffect(() => {
         let isMounted = true;
@@ -125,6 +145,16 @@ const Toolbar: React.FC = () => {
             handleLogin();
         }
     }, [wallet, publicKey]);
+
+    useEffect(() => {
+        // Initial fetch
+        fetchWalletBalance();
+
+        // Subscribe to balance updates
+        const unsubscribe = BalanceCacheService.subscribe(fetchWalletBalance);
+
+        return () => unsubscribe();
+    }, [fetchWalletBalance]);
 
     const handleDisconnect = useCallback(async () => {
         // First logout from backend
