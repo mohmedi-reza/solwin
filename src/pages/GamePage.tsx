@@ -1,15 +1,15 @@
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BettingModal from '../components/BettingModal';
 import Icon from '../components/icon/icon.component';
-import { PokerGame } from '../services/poker.service';
-import { Card, HandResult } from '../types/poker.interface';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { UserService } from '../services/user.service';
+import WalletModal from '../components/WalletModal';
 import { AuthService } from '../services/auth.service';
 import { BalanceCacheService } from '../services/balanceCache.service';
-import WalletModal from '../components/WalletModal';
+import { PokerGame } from '../services/poker.service';
+import { UserService } from '../services/user.service';
+import { Card, HandResult } from '../types/poker.interface';
 
 const game = new PokerGame();
 
@@ -37,8 +37,6 @@ const GamePage: React.FC = () => {
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [pdaBalance, setPdaBalance] = useState<number>(0);
   const [showWalletModal, setShowWalletModal] = useState(false);
-  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
-  const [balanceError, setBalanceError] = useState<string | null>(null);
 
   const rulesRef = useRef<HTMLDivElement>(null);
 
@@ -76,37 +74,6 @@ const GamePage: React.FC = () => {
     };
   }, [connection, publicKey, wallet]);
 
-  const fetchPdaBalance = async () => {
-    setIsLoadingBalance(true);
-    setBalanceError(null);
-
-    try {
-      // First check cookies
-      const pdaData = AuthService.getPdaData();
-      if (pdaData.pdaBalance) {
-        setPdaBalance(Number(pdaData.pdaBalance));
-        return;
-      }
-
-      // If no cookie data, fetch from API
-      const balance = await UserService.getWalletBalance();
-      setPdaBalance(Number(balance.pdaBalance));
-      BalanceCacheService.setBalance(Number(balance.pdaBalance));
-
-    } catch (error) {
-      console.error('Error fetching PDA balance:', error);
-      setBalanceError('Failed to load game balance');
-    } finally {
-      setIsLoadingBalance(false);
-    }
-  };
-
-  useEffect(() => {
-    if (publicKey && AuthService.isAuthenticated()) {
-      fetchPdaBalance();
-    }
-  }, [publicKey]);
-
   useEffect(() => {
     if (isDrawing) {
       let lastUpdate = Date.now();
@@ -143,6 +110,15 @@ const GamePage: React.FC = () => {
     }
   }, [isDrawing]);
 
+  useEffect(() => {
+    if (publicKey && AuthService.isAuthenticated()) {
+      const pdaData = AuthService.getPdaData();
+      if (pdaData.pdaBalance) {
+        setPdaBalance(Number(pdaData.pdaBalance));
+      }
+    }
+  }, [publicKey]);
+
   const handleWalletSuccess = useCallback(async () => {
     if (publicKey && AuthService.isAuthenticated()) {
       try {
@@ -163,20 +139,10 @@ const GamePage: React.FC = () => {
   }, [publicKey, connection]);
 
   const handleStartGame = () => {
-    if (isLoadingBalance) {
-      return; // Do nothing while loading
-    }
-
-    if (balanceError) {
-      fetchPdaBalance(); // Retry loading on error
-      return;
-    }
-
     if (!pdaBalance || pdaBalance < 0.1) {
       setShowWalletModal(true);
       return;
     }
-
     setShowBettingModal(true);
   };
 
@@ -255,19 +221,8 @@ const GamePage: React.FC = () => {
                   <button
                     onClick={handleStartGame}
                     className="relative text-nowrap btn btn-primary btn-lg text-xl px-4 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
-                    disabled={isLoadingBalance}
                   >
-                    {isLoadingBalance ? (
-                      <>
-                        <span className="loading loading-spinner"></span>
-                        Loading Balance...
-                      </>
-                    ) : balanceError ? (
-                      <>
-                        <Icon name="refresh" />
-                        Retry Loading Balance
-                      </>
-                    ) : !pdaBalance || pdaBalance < 0.1 ? (
+                    {!pdaBalance || pdaBalance < 0.1 ? (
                       <>
                         <Icon name="wallet" className="text-3xl" />
                         Deposit to Start Playing
