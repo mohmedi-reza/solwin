@@ -9,6 +9,7 @@ import AddressShort from '../AddressShort';
 import Icon from '../icon/icon.component';
 import { IconName } from '../icon/iconPack';
 import { UserService, WalletBalance } from '../../services/user.service';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 // Add new type for balance display
 type BalanceDisplay = 'pda' | 'wallet';
@@ -86,6 +87,12 @@ const Toolbar: React.FC = () => {
         };
     }, [authState]);
 
+    useEffect(() => {
+        if (wallet && publicKey && !AuthService.isAuthenticated()) {
+            handleLogin();
+        }
+    }, [wallet, publicKey]);
+
     const handleLogin = useCallback(async () => {
         if (!publicKey || !signMessage || authState === 'authenticating') return;
 
@@ -126,16 +133,14 @@ const Toolbar: React.FC = () => {
         }
     }, [publicKey, signMessage, authState]);
 
-    useEffect(() => {
-        if (publicKey && !AuthService.isAuthenticated() && authState === 'unauthenticated') {
-            handleLogin();
-        }
-    }, [publicKey, handleLogin, authState]);
-
     const handleDisconnect = useCallback(async () => {
         await AuthService.logout();
+        // Clear all local storage
+        localStorage.clear();
         disconnect();
         setAuthState('unauthenticated');
+        setBalance(null);
+        setWalletBalance(null);
     }, [disconnect]);
 
     const copyAddress = useCallback(() => {
@@ -211,18 +216,13 @@ const Toolbar: React.FC = () => {
                                     <div tabIndex={0} role="button" className="bg-base-200 flex gap-1 sm:flex items-center text-base-content/70 hover:text-base-content cursor-pointer p-2 rounded-lg hover:bg-base-200">
                                         <Icon name={getBalanceDisplay().icon as IconName} className={`${getBalanceDisplay().iconClass} text-lg`} />
                                         <p className='flex gap-2'>
-                                            <span>     {selectedBalance === 'pda'
-                                                ? parseFloat(walletBalance?.pdaBalance ?? '0').toLocaleString(undefined, {
-                                                    minimumFractionDigits: 2,
-                                                    maximumFractionDigits: 9,
-                                                })
-                                                : parseFloat(balance ?? '0').toLocaleString(undefined, {
-                                                    minimumFractionDigits: 2,
-                                                    maximumFractionDigits: 9,
-                                                })}</span>
+                                            <span>
+                                                {selectedBalance === 'pda'
+                                                    ? Number(walletBalance?.pdaBalance ?? '0').toFixed(4)
+                                                    : (Number(balance) / LAMPORTS_PER_SOL).toFixed(4)}
+                                            </span>
                                             <span>SOL</span>
                                         </p>
-
                                         <Icon name="arrowSquareDown" className="text-white text-sm opacity-50" />
                                     </div>
                                     <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-200 rounded-box w-fit">
@@ -237,7 +237,10 @@ const Toolbar: React.FC = () => {
                                                 >
                                                     <Icon name="wallet" className="text-success" />
                                                     <span className='text-nowrap'>Game Balance:</span>
-                                                    <p className="ml-auto flex gap-2"><span>{walletBalance.pdaBalance}</span> <span>SOL</span></p>
+                                                    <p className="ml-auto flex gap-2">
+                                                        <span>{Number(walletBalance.pdaBalance).toFixed(4)}</span>
+                                                        <span>SOL</span>
+                                                    </p>
                                                 </button>
                                             </li>
                                         )}
@@ -248,8 +251,10 @@ const Toolbar: React.FC = () => {
                                                     className={selectedBalance === 'wallet' ? 'active' : ''}
                                                 >
                                                     <Icon name="coin" className="text-primary" />
-                                                   <span className='text-nowrap'> Wallet Balance:</span>
-                                                    <span className="ml-auto">{balance} SOL</span>
+                                                    <span className='text-nowrap'>Wallet Balance:</span>
+                                                    <span className="ml-auto">
+                                                        {(Number(balance) / LAMPORTS_PER_SOL).toFixed(4)} SOL
+                                                    </span>
                                                 </button>
                                             </li>
                                         )}
@@ -299,6 +304,14 @@ const Toolbar: React.FC = () => {
                                                 {copied ? 'Copied' : 'Copy Address'}
                                             </button>
                                         </li>
+                                        {!AuthService.isAuthenticated() && (
+                                            <li>
+                                                <button onClick={handleLogin} className="flex items-center gap-2">
+                                                    <Icon name="login" className="text-lg" />
+                                                    {authLoading ? 'Authenticating...' : 'Login'}
+                                                </button>
+                                            </li>
+                                        )}
                                         <li>
                                             <button onClick={() => setVisible(true)} className="flex items-center gap-2">
                                                 <Icon name="refresh" className="text-lg" />

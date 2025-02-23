@@ -6,6 +6,8 @@ import { PokerGame } from '../services/poker.service';
 import { Card, HandResult } from '../types/poker.interface';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { UserService } from '../services/user.service';
+import { AuthService } from '../services/auth.service';
 
 const game = new PokerGame();
 
@@ -21,7 +23,6 @@ const GamePage: React.FC = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentHand, setCurrentHand] = useState<Card[]>([]);
   const [handResult, setHandResult] = useState<HandResult | null>(null);
-  const [balance, setBalance] = useState(1000);
   const [bet, setBet] = useState(10);
   const [risk, setRisk] = useState(1.0);
   const [shufflingCards, setShufflingCards] = useState<ShufflingCard[]>([]);
@@ -32,6 +33,7 @@ const GamePage: React.FC = () => {
   ]);
   const [isRulesOpen, setIsRulesOpen] = useState(true);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [pdaBalance, setPdaBalance] = useState<number>(0);
 
   const rulesRef = useRef<HTMLDivElement>(null);
 
@@ -56,6 +58,24 @@ const GamePage: React.FC = () => {
 
     return () => clearInterval(intervalId);
   }, [connection, publicKey]);
+
+  useEffect(() => {
+    const fetchPdaBalance = async () => {
+      if (publicKey && AuthService.isAuthenticated()) {
+        try {
+          const balance = await UserService.getWalletBalance();
+          setPdaBalance(Number(balance.pdaBalance));
+        } catch (error) {
+          console.error('Error fetching PDA balance:', error);
+        }
+      }
+    };
+
+    fetchPdaBalance();
+    const intervalId = setInterval(fetchPdaBalance, 20000);
+
+    return () => clearInterval(intervalId);
+  }, [publicKey]);
 
   useEffect(() => {
     if (isDrawing) {
@@ -97,28 +117,32 @@ const GamePage: React.FC = () => {
     setShowBettingModal(true);
   };
 
-  const handleBetConfirm = useCallback((newBet: number, newRisk: number) => {
-    if (!walletBalance || newBet > walletBalance) {
+  const handleBetConfirm = useCallback(async (newBet: number, newRisk: number) => {
+    if (!pdaBalance || newBet > pdaBalance) {
       // Show error toast or message
       return;
     }
 
-    setShowBettingModal(false);
-    setIsDrawing(true);
-    setBet(newBet);
-    setRisk(newRisk);
+    try {
+      setShowBettingModal(false);
+      setIsDrawing(true);
+      setBet(newBet);
+      setRisk(newRisk);
 
-    setTimeout(() => {
-      const hand = game.drawHand();
-      const result = game.evaluateHand(hand);
-      const winnings = game.calculateWinnings(newBet, newRisk, result);
+      const gameResult = await game.playHand(newBet, newRisk);
 
+      setTimeout(() => {
+        setIsDrawing(false);
+        setCurrentHand(gameResult.hand);
+        setHandResult(gameResult.result);
+        setPdaBalance(prev => prev + gameResult.winnings);
+      }, 5000);
+
+    } catch (error) {
+      console.error('Game error:', error);
       setIsDrawing(false);
-      setCurrentHand(hand);
-      setHandResult(result);
-      setBalance(prev => prev + winnings);
-    }, 5000);
-  }, [walletBalance]);
+    }
+  }, [pdaBalance]);
 
   const handleBack = useCallback(() => {
     setCurrentHand([]);
@@ -574,7 +598,7 @@ const GamePage: React.FC = () => {
 
         {/* Final Hand Display */}
         {currentHand.length > 0 && !isDrawing && (
-          <div className="flex-1 flex flex-col items-center justify-center space-y-12 ">
+          <div className="flex-1 flex flex-col items-center justify-center space-y-12">
             {/* Result Hero Section */}
             {handResult && (
               <div className="relative w-full max-w-4xl mx-auto bg-base-200 rounded-3xl p-2 py-4 md:p-8 overflow-hidden">
@@ -598,24 +622,30 @@ const GamePage: React.FC = () => {
 
                   {handResult.multiplier > 0 ? (
                     <div className="space-y-4">
-                      <div className="flex items-center justify-center gap-3">
+                      <div className="flex-col md:flex-row items-center justify-center gap-3">
                         <span className='text-4xl'>🤩</span>
-                        <span className="text-3xl font-bold text-success">
-                          You Won ${(handResult.multiplier * bet * (1 + risk))}!
-                        </span>
+                        <p className="text-3xl font-bold text-success">
+                          You Won {(handResult.multiplier * bet * (1 + risk)).toFixed(5)} SOL!
+                        </p>
                       </div>
-                      <div className="stats bg-base-100 shadow inline-flex">
-                        <div className="stat">
-                          <div className="stat-title">Multiplier</div>
-                          <div className="stat-value text-success">{handResult.multiplier}x</div>
+                      <div className="stats bg-base-100 shadow inline-flex text-sm sm:text-base">
+                        <div className="stat px-2 sm:px-4">
+                          <div className="stat-title text-xs sm:text-sm">Multiplier</div>
+                          <div className="stat-value text-success text-lg sm:text-2xl whitespace-nowrap">
+                            {handResult.multiplier}x
+                          </div>
                         </div>
-                        <div className="stat">
-                          <div className="stat-title">Risk Level</div>
-                          <div className="stat-value text-primary">{risk}x</div>
+                        <div className="stat px-2 sm:px-4">
+                          <div className="stat-title text-xs sm:text-sm">Risk Level</div>
+                          <div className="stat-value text-primary text-lg sm:text-2xl whitespace-nowrap">
+                            {risk}x
+                          </div>
                         </div>
-                        <div className="stat">
-                          <div className="stat-title">Total Bet</div>
-                          <div className="stat-value">${bet}</div>
+                        <div className="stat px-2 sm:px-4">
+                          <div className="stat-title text-xs sm:text-sm">Total Bet</div>
+                          <div className="stat-value text-lg sm:text-2xl whitespace-nowrap">
+                            {bet.toFixed(5)} SOL
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -628,7 +658,7 @@ const GamePage: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-base-content/60">
-                        You lost ${bet}. Try again with a different strategy!
+                        You lost {bet.toFixed(5)} SOL. Try again with a different strategy!
                       </p>
                     </div>
                   )}
@@ -686,22 +716,26 @@ const GamePage: React.FC = () => {
 
               </div>
 
-              <div className="stats-vertical md:stats bg-base-200 shadow">
-                <div className="stat">
+              <div className="stats-vertical md:stats bg-base-200 shadow text-sm sm:text-base">
+                <div className="stat px-3 sm:px-6">
                   <div className="stat-figure text-primary">
-                    <Icon name="wallet" className="text-3xl" />
+                    <Icon name="wallet" className="text-2xl sm:text-3xl" />
                   </div>
-                  <div className="stat-title">Current Balance</div>
-                  <div className="stat-value text-primary">${balance}</div>
-                  <div className="stat-desc">Updated just now</div>
+                  <div className="stat-title text-xs sm:text-sm">Game Balance</div>
+                  <div className="stat-value text-primary text-lg sm:text-2xl whitespace-nowrap">
+                    {pdaBalance.toFixed(5)} SOL
+                  </div>
+                  <div className="stat-desc text-xs">Updated just now</div>
                 </div>
-                <div className="stat">
+                <div className="stat px-3 sm:px-6">
                   <div className="stat-figure text-secondary">
-                    <Icon name="game" className="text-3xl" />
+                    <Icon name="game" className="text-2xl sm:text-3xl" />
                   </div>
-                  <div className="stat-title">Last Bet</div>
-                  <div className="stat-value">${bet}</div>
-                  <div className="stat-desc">Risk: {risk}x</div>
+                  <div className="stat-title text-xs sm:text-sm">Last Bet</div>
+                  <div className="stat-value text-lg sm:text-2xl whitespace-nowrap">
+                    {bet.toFixed(5)} SOL
+                  </div>
+                  <div className="stat-desc text-xs">Risk: {risk}x</div>
                 </div>
               </div>
             </div>
@@ -713,7 +747,6 @@ const GamePage: React.FC = () => {
           isOpen={showBettingModal}
           onClose={() => setShowBettingModal(false)}
           onConfirm={handleBetConfirm}
-          balance={balance}
         />
       </div>
     </div>

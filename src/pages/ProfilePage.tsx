@@ -115,7 +115,7 @@ const ProfilePage: React.FC = () => {
 
   return (
     <>
-      <div className="container mx-auto px-2 py-8 space-y-8">
+      <div className="container mx-auto py-8 space-y-8">
         {/* Profile Header */}
         <div className="relative bg-base-200 rounded-3xl p-6 md:p-8 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10"></div>

@@ -34,8 +34,8 @@ function getCardImagePath(card: Omit<Card, "imagePath">): string {
 
 export class PokerGame {
   private deck: Card[] = [];
-  private readonly MIN_BET = 10;
-  private readonly MAX_BET = 1000;
+  private readonly MIN_BET = 0.05;
+  private readonly MAX_BET = 5;
   private readonly MIN_RISK = 0.5;
   private readonly MAX_RISK = 2.0;
 
@@ -167,8 +167,8 @@ export class PokerGame {
   }
 
   public validateBet(bet: number, riskLevel: number): string | null {
-    if (bet < this.MIN_BET) return `Minimum bet is ${this.MIN_BET}`;
-    if (bet > this.MAX_BET) return `Maximum bet is ${this.MAX_BET}`;
+    if (bet < this.MIN_BET) return `Minimum bet is ${this.MIN_BET} SOL`;
+    if (bet > this.MAX_BET) return `Maximum bet is ${this.MAX_BET} SOL`;
     if (riskLevel < this.MIN_RISK) return `Minimum risk is ${this.MIN_RISK}`;
     if (riskLevel > this.MAX_RISK) return `Maximum risk is ${this.MAX_RISK}`;
     return null;
@@ -180,10 +180,9 @@ export class PokerGame {
     handResult: HandResult
   ): number {
     if (handResult.multiplier > 0) {
-      return Math.floor(bet * handResult.multiplier * (1 + riskLevel));
+      return Number((bet * handResult.multiplier * (1 + riskLevel)).toFixed(9));
     }
-
-    return -Math.floor(bet * riskLevel);
+    return Number((-bet * riskLevel).toFixed(9));
   }
 
   private isRoyalFlush(cards: Card[]): boolean {
@@ -245,5 +244,32 @@ export class PokerGame {
     const counts = new Map<number, number>();
     values.forEach((value) => counts.set(value, (counts.get(value) || 0) + 1));
     return Array.from(counts.values()).includes(2);
+  }
+
+  public async playHand(bet: number, risk: number): Promise<{
+    hand: Card[];
+    result: HandResult;
+    winnings: number;
+  }> {
+    // Validate bet and risk
+    const validationError = this.validateBet(bet, risk);
+    if (validationError) {
+      throw new Error(validationError);
+    }
+
+    // Draw new hand
+    const hand = this.drawHand();
+    
+    // Evaluate hand
+    const result = this.evaluateHand(hand);
+    
+    // Calculate winnings
+    const winnings = this.calculateWinnings(bet, risk, result);
+
+    return {
+      hand,
+      result,
+      winnings
+    };
   }
 }

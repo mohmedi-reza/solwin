@@ -1,5 +1,5 @@
 import { useWallet } from '@solana/wallet-adapter-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Icon from '../components/icon/icon.component';
 import { UserService } from '../services/user.service';
 import { UserProfile } from '../types/user.interface';
@@ -7,16 +7,78 @@ import { toast } from 'react-toastify';
 
 type TimeFilterType = '24h' | '7d' | '30d' | 'all';
 
+interface SortConfig {
+  key: 'date' | 'amount' | 'type';
+  direction: 'asc' | 'desc';
+}
+
 const HistoryPage: React.FC = () => {
   const { publicKey } = useWallet();
   const [activeTab, setActiveTab] = useState<'all' | 'deposits' | 'withdrawals' | 'bets'>('all');
   const [timeFilter, setTimeFilter] = useState<TimeFilterType>('all');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'date', direction: 'desc' });
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Updated fetchUserData function
+  const transactions = userProfile?.transactions || [];
+  const filteredTransactions = transactions.filter(tx => {
+    const txDate = new Date(tx.timestamp);
+    const now = new Date();
+    const matchesSearch = searchQuery === '' || 
+      tx.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tx.amount.toString().includes(searchQuery) ||
+      tx.txHash?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      new Date(tx.timestamp).toLocaleString().toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Apply time filter
+    const matchesTimeFilter = (() => {
+      switch (timeFilter) {
+        case '24h':
+          return now.getTime() - txDate.getTime() <= 24 * 60 * 60 * 1000;
+        case '7d':
+          return now.getTime() - txDate.getTime() <= 7 * 24 * 60 * 60 * 1000;
+        case '30d':
+          return now.getTime() - txDate.getTime() <= 30 * 24 * 60 * 60 * 1000;
+        default:
+          return true;
+      }
+    })();
+
+    // Apply type filter
+    const matchesTypeFilter = 
+      activeTab === 'all' ? true :
+      activeTab === 'deposits' ? tx.type === 'deposit' :
+      activeTab === 'withdrawals' ? tx.type === 'withdraw' :
+      activeTab === 'bets' ? (tx.type === 'bet' || tx.type === 'win') :
+      true;
+
+    return matchesSearch && matchesTimeFilter && matchesTypeFilter;
+  });
+
+  const sortedTransactions = useMemo(() => {
+    return [...filteredTransactions].sort((a, b) => {
+      if (sortConfig.key === 'date') {
+        const dateA = new Date(a.timestamp).getTime();
+        const dateB = new Date(b.timestamp).getTime();
+        return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
+      }
+      if (sortConfig.key === 'amount') {
+        return sortConfig.direction === 'asc' ? a.amount - b.amount : b.amount - a.amount;
+      }
+      if (sortConfig.key === 'type') {
+        return sortConfig.direction === 'asc' 
+          ? a.type.localeCompare(b.type)
+          : b.type.localeCompare(a.type);
+      }
+      return 0;
+    });
+  }, [filteredTransactions, sortConfig]);
+
   useEffect(() => {
     const fetchUserData = async () => {
+      if (!publicKey) return;
+      
       setIsLoading(true);
       try {
         const userData = await UserService.getProfile();
@@ -31,7 +93,7 @@ const HistoryPage: React.FC = () => {
     };
 
     fetchUserData();
-  }, []); // Removed publicKey dependency since we handle auth in api.service.ts
+  }, [publicKey]); // Add publicKey as dependency
 
   if (!publicKey) {
     return (
@@ -53,49 +115,35 @@ const HistoryPage: React.FC = () => {
     );
   }
 
-  // Updated transactions filtering
-  const transactions = userProfile?.transactions || [];
-  const filteredTransactions = transactions.filter(tx => {
-    const txDate = new Date(tx.timestamp);
-    const now = new Date();
-    
-    // Apply time filter
-    switch (timeFilter) {
-      case '24h':
-        return now.getTime() - txDate.getTime() <= 24 * 60 * 60 * 1000;
-      case '7d':
-        return now.getTime() - txDate.getTime() <= 7 * 24 * 60 * 60 * 1000;
-      case '30d':
-        return now.getTime() - txDate.getTime() <= 30 * 24 * 60 * 60 * 1000;
-      default:
-        return true;
-    }
-  }).filter(tx => {
-    // Apply type filter
-    if (activeTab === 'all') return true;
-    if (activeTab === 'deposits') return tx.type === 'deposit';
-    if (activeTab === 'withdrawals') return tx.type === 'withdraw';
-    if (activeTab === 'bets') return tx.type === 'bet' || tx.type === 'win';
-    return true;
-  });
-
-  // Updated stats calculation using userProfile.balance
   const stats = {
     totalDeposits: userProfile?.balance?.totalDeposited || 0,
     totalWithdrawals: userProfile?.balance?.totalWithdrawn || 0,
     netGaming: userProfile?.stats?.netProfit || 0,
   };
 
+  const handleSort = (key: SortConfig['key']) => {
+    setSortConfig(current => ({
+      key,
+      direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
+    <div className="container mx-auto py-8 space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
         <h1 className="text-3xl font-bold">Transaction History</h1>
         
-        <div className="flex gap-4">
-          {/* Time Filter */}
+        <div className="flex flex-col w-full md:w-auto md:flex-row gap-4">
+          <input
+            type="text"
+            placeholder="Search transactions..."
+            className="input input-bordered w-full"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
           <select 
-            className="select select-bordered"
+            className="select select-bordered w-full md:w-auto"
             value={timeFilter}
             onChange={(e) => setTimeFilter(e.target.value as TimeFilterType)}
           >
@@ -104,12 +152,6 @@ const HistoryPage: React.FC = () => {
             <option value="30d">Last 30 Days</option>
             <option value="all">All Time</option>
           </select>
-
-          {/* Export Button */}
-          <button className="btn btn-outline gap-2">
-            <Icon name="documentDownload" className="text-lg" />
-            Export
-          </button>
         </div>
       </div>
 
@@ -183,15 +225,21 @@ const HistoryPage: React.FC = () => {
             <table className="table table-zebra w-full">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Type</th>
-                  <th>Amount</th>
+                  <th className="cursor-pointer" onClick={() => handleSort('date')}>
+                    Date {sortConfig.key === 'date' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="cursor-pointer" onClick={() => handleSort('type')}>
+                    Type {sortConfig.key === 'type' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="cursor-pointer" onClick={() => handleSort('amount')}>
+                    Amount {sortConfig.key === 'amount' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th>Status</th>
                   <th>Transaction Hash</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredTransactions.map((tx) => (
+                {sortedTransactions.map((tx) => (
                   <tr key={tx.id}>
                     <td>{new Date(tx.timestamp).toLocaleString()}</td>
                     <td>
@@ -227,7 +275,7 @@ const HistoryPage: React.FC = () => {
                     <td>
                       {tx.txHash && (
                         <a 
-                          href={`https://solscan.io/tx/${tx.txHash}`}
+                          href={`https://explorer.solana.com/tx/${tx.txHash}?cluster=devnet`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="link link-primary"
