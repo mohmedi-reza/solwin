@@ -1,6 +1,7 @@
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
 import { AuthService } from '../services/auth.service';
 import { UserService } from '../services/user.service';
 import Icon from './icon/icon.component';
@@ -21,27 +22,28 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm 
   const [error, setError] = useState<string | null>(null);
   const [potentialWin, setPotentialWin] = useState(0);
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const betPresets = [
+  const betPresets = useMemo(() => [
     { amount: 0.05, label: 'Min' },
     { amount: 0.5, label: '0.5 SOL' },
     { amount: 1, label: '1 SOL' },
     { amount: pdaBalance || 0, label: 'Max' }
-  ];
+  ], [pdaBalance]);
 
   const riskPresets = [
     { value: 0.5, label: 'Safe' },
-    { value: 1.0, label: 'Normal' },
-    { value: 1.5, label: 'High' },
-    { value: 2.0, label: 'Max' }
+    { value: 0.7, label: 'Low' },
+    { value: 0.85, label: 'Med' },
+    { value: 1.0, label: 'Max' }
   ];
 
   useEffect(() => {
     const fetchAndUpdateBalances = async () => {
       if (publicKey && AuthService.isAuthenticated()) {
         try {
-          const balance = await UserService.getWalletBalance();
-          setPdaBalance(Number(balance.pdaBalance));
+          const walletData = await UserService.getWalletBalance();
+          setPdaBalance(Number(walletData.balance));
 
           const solBalance = await connection.getBalance(publicKey);
           setWalletBalance(solBalance / LAMPORTS_PER_SOL);
@@ -64,34 +66,36 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm 
   const isInsufficientBalance = bet > (pdaBalance || 0);
   const isValidBet = bet >= 0.05 && !isInsufficientBalance;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    if (isSubmitting) return;
+    
     console.log('handleConfirm called with:', { bet, risk, pdaBalance });
 
     if (!pdaBalance) {
       setError("Could not fetch game balance");
-      console.error('No PDA balance available');
-      return false;
+      return;
     }
 
     if (isInsufficientBalance) {
       setError("Insufficient game balance");
-      console.error('Insufficient balance:', { bet, pdaBalance });
-      return false;
+      return;
     }
 
     if (bet < 0.05) {
       setError("Minimum bet is 0.05 SOL");
-      console.error('Bet too small:', bet);
-      return false;
+      return;
     }
 
-    // Call onConfirm first
-    console.log('Calling onConfirm with:', { bet, risk });
-    onConfirm(bet, risk);
-
-    // Close the modal
-    onClose();
-    return true;
+    try {
+      setIsSubmitting(true);
+      onClose();
+      onConfirm(bet, risk);
+    } catch (error) {
+      console.error('Error in bet confirmation:', error);
+      toast.error('Failed to place bet. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -195,8 +199,8 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm 
             onChange={(e) => setRisk(Number(e.target.value))}
             className="range range-primary range-lg"
             min={0.5}
-            max={2.0}
-            step={0.1}
+            max={1.0}
+            step={0.05}
           />
           <div className="flex justify-between text-sm text-base-content/60">
             <span>Safer</span>
@@ -238,6 +242,7 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm 
         <div className="flex gap-4 pt-4 flex-col md:flex-row">
           <button
             onClick={onClose}
+            disabled={isSubmitting}
             className="btn btn-outline flex-1 gap-2 py-3"
           >
             <Icon name="closeCircle" className="text-xl" />
@@ -246,11 +251,22 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm 
 
           <button
             onClick={handleConfirm}
-            disabled={!isValidBet}
-            className={`btn btn-primary flex-1 gap-2 py-3 ${!isValidBet ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!isValidBet || isSubmitting}
+            className={`btn btn-primary flex-1 gap-2 py-3 ${
+              (!isValidBet || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
-            <Icon name="game" className="text-xl" />
-            Place Bet & Play
+            {isSubmitting ? (
+              <>
+                <span className="loading loading-spinner"></span>
+                Placing Bet...
+              </>
+            ) : (
+              <>
+                <Icon name="game" className="text-xl" />
+                Place Bet & Play
+              </>
+            )}
           </button>
         </div>
 

@@ -17,48 +17,20 @@ const COOKIE_NAMES = {
   PDA_BALANCE: "pdaBalance",
 } as const;
 
-interface LoginResponse {
-  user: {
-    id: string;
-    username: string;
-    avatar: string;
-    createdAt: string;
-    lastLogin: string;
-    balance: {
-      available: number;
-      locked: number;
-      pdaBalance: string;
-      totalDeposited: number;
-      totalWithdrawn: number;
-    };
-    stats: {
-      totalGames: number;
-      wins: number;
-      losses: number;
-      winRate: number;
-    };
-    userPda: {
-      pdaAddress: string;
-      rentFee: number;
-      balance: number;
-    };
-  };
-  accessToken: string;
-  refreshToken: string;
-}
-
 // Add new auth state type
 export type AuthState = "authenticated" | "unauthenticated" | "authenticating";
 
 export const AuthService = {
-  getNonce: async (publicKey: string): Promise<string> => {
+  getNonce: async (
+    publicKey: string
+  ): Promise<{ nonce: string; message: string }> => {
     try {
-      const response = await apiClient.get<{ nonce: string }>(
-        `/auth/nonce/${publicKey}`
+      const response = await apiClient.get<{ nonce: string; message: string }>(
+        `/auth/nonce?wallet=${publicKey}`
       );
-      return response.data.nonce;
+      return response;
     } catch (err) {
-      const error = err as AxiosError<{ error: string; code: string }>;
+      const error = err as AxiosError<{ error: string }>;
       console.error("Error fetching nonce:", error);
       throw error;
     }
@@ -75,35 +47,28 @@ export const AuthService = {
     this._authState = state;
   },
 
-  async login(
-    publicKey: string,
-    signature: string,
-    nonce: string
-  ): Promise<boolean> {
+  async login(publicKey: string, signature: string): Promise<boolean> {
     this.setAuthState("authenticating");
     try {
-      const response = await apiClient.post<LoginResponse>("/auth/login", {
-        publicKey,
-        signature,
-        nonce,
-      });
-
-      if (response.data?.accessToken && response.data?.refreshToken) {
-        this.setTokens(response.data.accessToken, response.data.refreshToken);
-        if (response.data.user?.userPda) {
-          this.setPdaData(
-            response.data.user.userPda.pdaAddress,
-            response.data.user.userPda.balance.toString()
-          );
+      const response = await apiClient.post<{ token: string; message: string }>(
+        "/auth",
+        {
+          publicKey,
+          signature,
         }
-        this.setAuthState("authenticated");
-        return true;
+      );
+
+      if (!response?.token) {
+        throw new Error('No token received from server');
       }
-      this.setAuthState("unauthenticated");
-      return false;
+
+      // Store the JWT token
+      this.setTokens(response.token, response.token);
+      this.setAuthState("authenticated");
+      return true;
     } catch (err) {
       this.setAuthState("unauthenticated");
-      const error = err as AxiosError<{ error: string; code: string }>;
+      const error = err as AxiosError<{ error: string }>;
       console.error("Login error:", error.response?.data);
       this.clearTokens();
       throw error;
@@ -134,10 +99,10 @@ export const AuthService = {
   },
 
   clearTokens() {
-    Cookies.remove(COOKIE_NAMES.ACCESS_TOKEN);
-    Cookies.remove(COOKIE_NAMES.REFRESH_TOKEN);
-    Cookies.remove(COOKIE_NAMES.PDA_ADDRESS);
-    Cookies.remove(COOKIE_NAMES.PDA_BALANCE);
+    Object.values(COOKIE_NAMES).forEach(cookieName => {
+      Cookies.remove(cookieName);
+    });
+    this._authState = "unauthenticated";
   },
 
   async refreshTokens(): Promise<boolean> {
@@ -153,12 +118,12 @@ export const AuthService = {
         { refreshToken }
       );
 
-      if (response.data?.accessToken && response.data?.refreshToken) {
-        this.setTokens(response.data.accessToken, response.data.refreshToken);
+      if (response?.accessToken && response.refreshToken) {
+        this.setTokens(response.accessToken, response.refreshToken);
         return true;
       }
 
-      console.error("Refresh response missing tokens:", response.data);
+      console.error("Refresh response missing tokens:", response);
       return false;
     } catch (err) {
       const error = err as AxiosError<AuthError>;

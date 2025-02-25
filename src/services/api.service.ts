@@ -83,15 +83,21 @@ apiClient.interceptors.request.use(
 // Response interceptor
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    // Log response for debugging
     console.log("API Response:", {
       url: response.config.url,
       status: response.status,
       data: response.data
     });
-    return response;
+    return response.data; // Return only the data
   },
   async (error: AxiosError<AuthError>) => {
+    console.error("API Error:", {
+      url: error.config?.url,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+
     const originalRequest = error.config as RetryableRequest;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -131,13 +137,28 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Handle other errors
+    // Improve error handling
     if (error.response?.status === 500) {
       toast.error("Server error. Please try again later.");
+    } else if (error.code === 'ECONNABORTED') {
+      toast.error("Request timeout. Please check your connection.");
+    } else if (!error.response) {
+      toast.error("Network error. Please check your connection.");
     }
 
     return Promise.reject(error);
   }
 );
+
+// Create a public instance without auth interceptors
+export const createPublicClient = () => {
+  return axios.create({
+    baseURL: API_BASE_URL,
+    timeout: 15000,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+};
 
 export default apiClient;

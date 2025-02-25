@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import Icon from './icon/icon.component';
-import { WalletService } from '../services/wallet.service';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { UserService } from '../services/user.service';
+import useGameWeb3 from '../web3/slots';
+import Icon from './icon/icon.component';
 interface WalletModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -38,6 +38,7 @@ const WalletModal: React.FC<WalletModalProps> = ({
   const [isValid, setIsValid] = useState(false);
   const [isLoadingPda, setIsLoadingPda] = useState(true);
   const [pdaBalance, setPdaBalance] = useState('0');
+  const { SendSol, withdrawFromUserPDA } = useGameWeb3();
 
   const handleConnectWallet = () => {
     setVisible(true); // Open Solana wallet modal
@@ -125,7 +126,7 @@ const WalletModal: React.FC<WalletModalProps> = ({
 
     setIsLoading(true);
     try {
-      const success = await WalletService.deposit(amount);
+      const success = await SendSol(amount);
       if (success) {
         // Show success message and close
         toast.success(`Successfully deposited ${amount.toFixed(4)} SOL`);
@@ -156,8 +157,8 @@ const WalletModal: React.FC<WalletModalProps> = ({
 
     setIsLoading(true);
     try {
-      const response = await WalletService.withdraw(amount);
-      if (response.success) {
+      const success = await withdrawFromUserPDA(amount);
+      if (success) {
 
         // Show success message and close
         toast.success(`Successfully withdrew ${amount.toFixed(4)} SOL`);
@@ -179,10 +180,11 @@ const WalletModal: React.FC<WalletModalProps> = ({
 
       setIsLoadingPda(true);
       try {
-        const user = await UserService.getProfile();
-        setPdaBalance(user.balance.pdaBalance);
+        const walletData = await UserService.getWalletBalance();
+        setPdaBalance(walletData.balance.toString());
       } catch (error) {
         console.error('Error fetching PDA balance:', error);
+        toast.error('Failed to fetch wallet balance');
       } finally {
         setIsLoadingPda(false);
       }

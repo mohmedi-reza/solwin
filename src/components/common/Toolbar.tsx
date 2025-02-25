@@ -2,11 +2,12 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { AxiosError } from 'axios';
+import bs58 from 'bs58';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { AuthService, AuthState } from '../../services/auth.service';
-import { UserService, WalletBalance } from '../../services/user.service';
+import { UserService, WalletBalanceResponse } from '../../services/user.service';
 import AddressShort from '../AddressShort';
 import Icon from '../icon/icon.component';
 import { IconName } from '../icon/iconPack';
@@ -24,14 +25,14 @@ const Toolbar: React.FC = () => {
     const [balance, setBalance] = useState<string | null>(null);
     const [authLoading, setAuthLoading] = useState(false);
     const [authState, setAuthState] = useState<AuthState>('unauthenticated');
-    const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
+    const [walletBalance, setWalletBalance] = useState<WalletBalanceResponse | null>(null);
     const [isBalanceLoading, setIsBalanceLoading] = useState(false);
 
     const fetchWalletBalance = useCallback(async () => {
         if (!AuthService.isAuthenticated() || !wallet) return;
 
         setIsBalanceLoading(true);
-        try {  
+        try {
             // Cache invalid or empty, fetch fresh balance
             const balance = await UserService.getWalletBalance();
             setWalletBalance(balance);
@@ -50,43 +51,43 @@ const Toolbar: React.FC = () => {
         setAuthState('authenticating');
 
         try {
-            const nonce = await AuthService.getNonce(publicKey.toBase58());
-            const message = new TextEncoder().encode(nonce);
-            const signature = await signMessage(message);
-            const base64Signature = Buffer.from(signature).toString('base64');
+            // Get nonce and message from server
+            const { nonce } = await AuthService.getNonce(publicKey.toBase58());
+
+            if (!nonce) {
+                throw new Error('Failed to get nonce from server');
+            }
+
+            // Create the message to sign
+            const message = `Please sign this nonce to authenticate: ${nonce}`;
+            const messageBytes = new TextEncoder().encode(message);
+            const signature = await signMessage(messageBytes);
+            const signatureBase58 = bs58.encode(signature);
 
             const success = await AuthService.login(
                 publicKey.toBase58(),
-                base64Signature,
-                nonce
+                signatureBase58
             );
 
             if (success) {
                 setAuthState('authenticated');
                 toast.success('Successfully authenticated!');
                 await fetchWalletBalance();
-                // Force a balance refresh
-                const balance = await UserService.getWalletBalance();
-                if (balance) {
-                    setWalletBalance(balance);
-                }
             } else {
-                setAuthState('unauthenticated');
-                toast.error('Authentication failed');
+                throw new Error('Authentication failed');
             }
         } catch (error) {
             setAuthState('unauthenticated');
             console.error('Auth error:', error);
-            const axiosError = error as AxiosError<{ error: string; code: string }>;
-            toast.error(
-                axiosError?.response?.data?.error ||
-                'Authentication failed. Please try again.'
-            );
+            const axiosError = error as AxiosError<{ error: string }>;
+            const errorMessage = axiosError?.response?.data?.error ||
+                (error instanceof Error ? error.message : 'Authentication failed. Please try again.');
+            toast.error(errorMessage);
             AuthService.clearTokens();
         } finally {
             setAuthLoading(false);
         }
-    }, [publicKey, signMessage, authState]);
+    }, [publicKey, signMessage, authState, fetchWalletBalance]);
 
     useEffect(() => {
         let isMounted = true;
@@ -124,10 +125,17 @@ const Toolbar: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (wallet && publicKey && !AuthService.isAuthenticated() && !authLoading) {
+        const shouldAttemptLogin =
+            wallet &&
+            publicKey &&
+            !AuthService.isAuthenticated() &&
+            !authLoading &&
+            authState === 'unauthenticated';
+
+        if (shouldAttemptLogin) {
             handleLogin();
         }
-    }, [wallet, publicKey, authLoading, handleLogin]);
+    }, [wallet, publicKey, authLoading, authState, handleLogin]);
 
     useEffect(() => {
         // Initial fetch
@@ -166,11 +174,11 @@ const Toolbar: React.FC = () => {
     };
 
     const getBalanceDisplay = () => {
-        if (selectedBalance === 'pda' && walletBalance?.pdaBalance !== undefined) {
+        if (selectedBalance === 'pda' && walletBalance?.balance !== undefined) {
             return {
                 icon: "wallet",
                 iconClass: "text-success",
-                value: walletBalance.pdaBalance,
+                value: walletBalance.balance,
                 label: "Game Balance"
             };
         }
@@ -218,7 +226,7 @@ const Toolbar: React.FC = () => {
                         {/* Actions - Responsive */}
                         <div className="flex items-center gap-2 sm:gap-4">
                             {/* Balance Dropdown */}
-                            {(balance !== null || walletBalance?.pdaBalance !== null) && (
+                            {(balance !== null || walletBalance?.balance !== null) && (
                                 <div className="dropdown dropdown-end">
                                     <div tabIndex={0} role="button" className="bg-base-200 flex gap-1 sm:flex items-center text-base-content/70 hover:text-base-content cursor-pointer p-2 rounded-lg hover:bg-base-200">
                                         <Icon name={getBalanceDisplay().icon as IconName} className={`${getBalanceDisplay().iconClass} text-lg`} />
@@ -228,7 +236,7 @@ const Toolbar: React.FC = () => {
                                             <p className='flex gap-2'>
                                                 <span>
                                                     {selectedBalance === 'pda'
-                                                        ? Number(walletBalance?.pdaBalance ?? '0').toFixed(4)
+                                                        ? Number(walletBalance?.balance ?? '0').toFixed(4)
                                                         : (Number(balance) / LAMPORTS_PER_SOL).toFixed(4)}
                                                 </span>
                                                 <span>SOL</span>
@@ -240,7 +248,7 @@ const Toolbar: React.FC = () => {
                                         <li className="menu-title">
                                             <span>Select Balance</span>
                                         </li>
-                                        {walletBalance?.pdaBalance !== undefined && (
+                                        {walletBalance?.balance !== undefined && (
                                             <li>
                                                 <button
                                                     onClick={() => setSelectedBalance('pda')}
@@ -249,7 +257,7 @@ const Toolbar: React.FC = () => {
                                                     <Icon name="wallet" className="text-success" />
                                                     <span className='text-nowrap'>Game Balance:</span>
                                                     <p className="ml-auto flex gap-2">
-                                                        <span>{Number(walletBalance.pdaBalance).toFixed(4)}</span>
+                                                        <span>{Number(walletBalance.balance).toFixed(4)}</span>
                                                         <span>SOL</span>
                                                     </p>
                                                 </button>

@@ -6,11 +6,12 @@ import BettingModal from '../components/BettingModal';
 import Icon from '../components/icon/icon.component';
 import WalletModal from '../components/WalletModal';
 import { AuthService } from '../services/auth.service';
-import { PokerGame } from '../services/poker.service';
 import { UserService } from '../services/user.service';
 import { Card, HandResult } from '../types/poker.interface';
-
-const game = new PokerGame();
+import { GameService } from '../services/game.service';
+import { toast } from 'react-toastify';
+import { LeaderboardService } from '../services/leaderboard.service';
+import { LeaderboardEntry } from '../types/leaderboard.interface';
 
 interface ShufflingCard extends Card {
   key: number;
@@ -27,11 +28,7 @@ const GamePage: React.FC = () => {
   const [bet, setBet] = useState(10);
   const [risk, setRisk] = useState(1.0);
   const [shufflingCards, setShufflingCards] = useState<ShufflingCard[]>([]);
-  const [recentWinners] = useState([
-    { name: 'Player1', hand: 'Royal Flush', amount: 2500 },
-    { name: 'Player2', hand: 'Four of a Kind', amount: 800 },
-    { name: 'Player3', hand: 'Straight Flush', amount: 1200 },
-  ]);
+  const [recentWinners, setRecentWinners] = useState<LeaderboardEntry[]>([]);
   const [isRulesOpen, setIsRulesOpen] = useState(true);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [pdaBalance, setPdaBalance] = useState<number>(0);
@@ -42,6 +39,23 @@ const GamePage: React.FC = () => {
   const scrollToRules = () => {
     rulesRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const fetchBalance = useCallback(async () => {
+    if (publicKey && AuthService.isAuthenticated()) {
+      try {
+        const PdaBalace = await UserService.getWalletBalance();
+        setPdaBalance(Number(PdaBalace.balance));
+      } catch (error) {
+        console.error('Error fetching balance:', error);
+      }
+    }
+  }, [publicKey]);
+
+  useEffect(() => {
+    if (publicKey && AuthService.isAuthenticated()) {
+      fetchBalance();
+    }
+  }, [publicKey, fetchBalance]);
 
   useEffect(() => {
     let isMounted = true;
@@ -109,30 +123,17 @@ const GamePage: React.FC = () => {
     }
   }, [isDrawing]);
 
-  useEffect(() => {
-    if (publicKey && AuthService.isAuthenticated()) {
-      const pdaData = AuthService.getPdaData();
-      if (pdaData.pdaBalance) {
-        setPdaBalance(Number(pdaData.pdaBalance));
-      }
-    }
-  }, [publicKey]);
-
   const handleWalletSuccess = useCallback(async () => {
     if (publicKey && AuthService.isAuthenticated()) {
       try {
-        // Fetch updated PDA balance
-        const balance = await UserService.getWalletBalance();
-        setPdaBalance(Number(balance.pdaBalance));
-
-        // Update wallet balance
+        await fetchBalance();
         const solBalance = await connection.getBalance(publicKey);
         setWalletBalance(solBalance / LAMPORTS_PER_SOL);
       } catch (error) {
         console.error('Error refreshing balances:', error);
       }
     }
-  }, [publicKey, connection]);
+  }, [publicKey, connection, fetchBalance]);
 
   const handleStartGame = () => {
     if (!pdaBalance || pdaBalance < 0.1) {
@@ -144,28 +145,27 @@ const GamePage: React.FC = () => {
 
   const handleBetConfirm = useCallback(async (newBet: number, newRisk: number) => {
     try {
-      setShowBettingModal(false);
-      setIsDrawing(true);
       setBet(newBet);
       setRisk(newRisk);
+      setIsDrawing(true);
 
       console.log('Starting game with:', { newBet, newRisk });
-      const gameResult = await game.playHand(newBet, newRisk);
+      const gameResult = await GameService.createNewGame(newBet, newRisk);
       console.log('Game result:', gameResult);
 
-      setTimeout(() => {
+      setTimeout(async () => {
         setIsDrawing(false);
         setCurrentHand(gameResult.hand);
         setHandResult(gameResult.result);
-        const newBalance = pdaBalance + gameResult.winnings;
-        setPdaBalance(newBalance);
+        await fetchBalance();
       }, 5000);
 
     } catch (error) {
       console.error('Game error:', error);
       setIsDrawing(false);
+      toast.error('Failed to play game. Please try again.');
     }
-  }, [pdaBalance]);
+  }, [fetchBalance]);
 
   const handleBack = useCallback(() => {
     setCurrentHand([]);
@@ -176,6 +176,28 @@ const GamePage: React.FC = () => {
 
   const goToHomePage = () => {
     navigate('/');
+  };
+
+  useEffect(() => {
+    const fetchRecentWins = async () => {
+      const wins = await LeaderboardService.getRecentWins(3);
+      setRecentWinners(wins);
+    };
+
+    fetchRecentWins();
+  }, []);
+
+  const getRankBadge = (index: number) => {
+    switch (index) {
+      case 0:
+        return <span className="badge badge-primary gap-1">🥇 1st</span>;
+      case 1:
+        return <span className="badge badge-secondary gap-1">🥈 2nd</span>;
+      case 2:
+        return <span className="badge badge-accent gap-1">🥉 3rd</span>;
+      default:
+        return null;
+    }
   };
 
   const renderReadyToPlay = () => {
@@ -278,7 +300,7 @@ const GamePage: React.FC = () => {
               <div className="stat-title">Your Balance</div>
               {publicKey ? (
                 <>
-                  <div className="stat-value text-primary">{walletBalance || '0'} SOL</div>
+                  <div className="stat-value text-primary">{pdaBalance || '0'} SOL</div>
                   <div className="stat-desc">Ready to bet</div>
                 </>
               ) : (
@@ -394,14 +416,21 @@ const GamePage: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <div className="avatar placeholder">
                       <div className="bg-primary text-white rounded-full w-8">
-                        <span className="text-xs">{winner.name.charAt(0)}</span>
+                        <span className="text-xs">{winner.pdaAddress.slice(0, 2)}</span>
                       </div>
                     </div>
-                    <span className="font-semibold">{winner.name}</span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{winner.pdaAddress.slice(0, 6)}...{winner.pdaAddress.slice(-4)}</span>
+                        {getRankBadge(index)}
+                      </div>
+                      <div className="text-sm text-base-content/60">{winner.gameHistory.handType}</div>
+                    </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm text-base-content/60">{winner.hand}</div>
-                    <div className="text-success font-bold">+${winner.amount}</div>
+                    <div className={`font-bold ${winner.gameHistory.winnings > 0 ? 'text-success' : 'text-error'}`}>
+                      {winner.gameHistory.winnings > 0 ? '+' : ''}{winner.gameHistory.winnings.toFixed(3)} SOL
+                    </div>
                   </div>
                 </div>
               ))}
@@ -661,27 +690,29 @@ const GamePage: React.FC = () => {
                     <div className="space-y-4">
                       <div className="flex-col md:flex-row items-center justify-center gap-3">
                         <span className='text-4xl'>🤩</span>
-                        <p className="text-3xl font-bold text-success">
-                          You Won {(handResult.multiplier * bet * (1 + risk)).toFixed(5)} SOL!
-                        </p>
-                      </div>
-                      <div className="stats bg-base-100 shadow inline-flex text-sm sm:text-base">
-                        <div className="stat px-2 sm:px-4">
-                          <div className="stat-title text-xs sm:text-sm">Multiplier</div>
-                          <div className="stat-value text-success text-lg sm:text-2xl whitespace-nowrap">
-                            {handResult.multiplier}x
+                        <div className="stats bg-base-100/50 backdrop-blur-sm shadow inline-flex">
+                          <div className="stat px-6">
+                            <div className="stat-title">Bet Amount</div>
+                            <div className="stat-value text-base">{bet.toFixed(3)} SOL</div>
                           </div>
-                        </div>
-                        <div className="stat px-2 sm:px-4">
-                          <div className="stat-title text-xs sm:text-sm">Risk Level</div>
-                          <div className="stat-value text-primary text-lg sm:text-2xl whitespace-nowrap">
-                            {risk}x
+                          <div className="stat px-6">
+                            <div className="stat-title">Multiplier</div>
+                            <div className="stat-value text-success text-base">
+                              {handResult.multiplier}x
+                            </div>
                           </div>
-                        </div>
-                        <div className="stat px-2 sm:px-4">
-                          <div className="stat-title text-xs sm:text-sm">Total Bet</div>
-                          <div className="stat-value text-lg sm:text-2xl whitespace-nowrap">
-                            {bet.toFixed(5)} SOL
+                          <div className="stat px-6">
+                            <div className="stat-title">Risk Level</div>
+                            <div className="stat-value text-primary text-base">{risk}x</div>
+                          </div>
+                          <div className="stat px-6">
+                            <div className="stat-title">Net Win</div>
+                            <div className="stat-value text-success text-base">
+                              +{(handResult.multiplier * bet * (1 + risk) - bet).toFixed(3)} SOL
+                            </div>
+                            <div className="stat-desc">
+                              Total: {(handResult.multiplier * bet * (1 + risk)).toFixed(3)} SOL
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -690,12 +721,21 @@ const GamePage: React.FC = () => {
                     <div className="space-y-4">
                       <div className="flex items-center justify-center gap-3">
                         <span className='text-4xl'>😥</span>
-                        <span className="text-3xl text-start font-bold text-error">
-                          Better luck next time!
-                        </span>
+                        <div className="stats bg-base-100/50 backdrop-blur-sm shadow inline-flex">
+                          <div className="stat px-6">
+                            <div className="stat-title">Bet Amount</div>
+                            <div className="stat-value text-error text-base">
+                              -{bet.toFixed(3)} SOL
+                            </div>
+                          </div>
+                          <div className="stat px-6">
+                            <div className="stat-title">Risk Level</div>
+                            <div className="stat-value text-base">{risk}x</div>
+                          </div>
+                        </div>
                       </div>
                       <p className="text-base-content/60">
-                        You lost {bet.toFixed(5)} SOL. Try again with a different strategy!
+                        Better luck next time! Try another hand.
                       </p>
                     </div>
                   )}

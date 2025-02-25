@@ -37,7 +37,7 @@ export class PokerGame {
   private readonly MIN_BET = 0.05;
   private readonly MAX_BET = 5;
   private readonly MIN_RISK = 0.5;
-  private readonly MAX_RISK = 2.0;
+  private readonly MAX_RISK = 1.0;
 
   constructor() {
     this.initializeDeck();
@@ -171,6 +171,7 @@ export class PokerGame {
     if (bet > this.MAX_BET) return `Maximum bet is ${this.MAX_BET} SOL`;
     if (riskLevel < this.MIN_RISK) return `Minimum risk is ${this.MIN_RISK}`;
     if (riskLevel > this.MAX_RISK) return `Maximum risk is ${this.MAX_RISK}`;
+    if (riskLevel * bet > bet) return `Risk amount cannot exceed bet amount`;
     return null;
   }
 
@@ -180,7 +181,7 @@ export class PokerGame {
     handResult: HandResult
   ): number {
     if (handResult.multiplier > 0) {
-      return Number((bet * handResult.multiplier * (1 + riskLevel)).toFixed(9));
+      return Number((bet * handResult.multiplier * (1 + (riskLevel - 0.5))).toFixed(9));
     }
     return Number((-bet * riskLevel).toFixed(9));
   }
