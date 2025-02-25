@@ -6,7 +6,6 @@ import BettingModal from '../components/BettingModal';
 import Icon from '../components/icon/icon.component';
 import WalletModal from '../components/WalletModal';
 import { AuthService } from '../services/auth.service';
-import { BalanceCacheService } from '../services/balanceCache.service';
 import { PokerGame } from '../services/poker.service';
 import { UserService } from '../services/user.service';
 import { Card, HandResult } from '../types/poker.interface';
@@ -129,9 +128,6 @@ const GamePage: React.FC = () => {
         // Update wallet balance
         const solBalance = await connection.getBalance(publicKey);
         setWalletBalance(solBalance / LAMPORTS_PER_SOL);
-
-        // Update cache
-        BalanceCacheService.setBalance(Number(balance.pdaBalance));
       } catch (error) {
         console.error('Error refreshing balances:', error);
       }
@@ -163,8 +159,6 @@ const GamePage: React.FC = () => {
         setHandResult(gameResult.result);
         const newBalance = pdaBalance + gameResult.winnings;
         setPdaBalance(newBalance);
-        // Update cache with new balance
-        BalanceCacheService.setBalance(newBalance);
       }, 5000);
 
     } catch (error) {

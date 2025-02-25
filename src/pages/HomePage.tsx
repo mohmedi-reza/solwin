@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Icon from "../components/icon/icon.component";
 import WalletModal from "../components/WalletModal";
-import { BalanceCacheService } from '../services/balanceCache.service';
 
 interface GameCardStats {
   minBet: number;
@@ -109,11 +108,6 @@ const HomePage: React.FC = () => {
 
     // Initial fetch
     fetchAndUpdateBalance();
-    
-    // Subscribe to balance updates
-    const unsubscribe = BalanceCacheService.subscribe(fetchAndUpdateBalance);
-    
-    return () => unsubscribe();
   }, [publicKey, connection]);
 
   // Add handler for wallet operation success
@@ -240,8 +234,8 @@ const HomePage: React.FC = () => {
 
                   {/* Dynamic accent overlay based on status */}
                   <div className={`absolute inset-0 ${card.status === "Active" ? "bg-success/5" :
-                      card.status === "Trend" ? "bg-secondary/5" :
-                        "bg-accent/5"
+                    card.status === "Trend" ? "bg-secondary/5" :
+                      "bg-accent/5"
                     } mix-blend-overlay`}></div>
 
                   <img
@@ -274,8 +268,8 @@ const HomePage: React.FC = () => {
                     <div className="flex justify-between items-start gap-2">
                       <h3 className="text-lg sm:text-xl font-bold">{card.title}</h3>
                       <span className={`badge ${card.status === "Active" ? "badge-success" :
-                          card.status === "Trend" ? "badge-secondary" :
-                            "badge-accent"
+                        card.status === "Trend" ? "badge-secondary" :
+                          "badge-accent"
                         }`}>
                         {card.status}
                       </span>

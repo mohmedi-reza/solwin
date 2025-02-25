@@ -6,7 +6,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { AuthService, AuthState } from '../../services/auth.service';
-import { BalanceCacheService } from '../../services/balanceCache.service';
 import { UserService, WalletBalance } from '../../services/user.service';
 import AddressShort from '../AddressShort';
 import Icon from '../icon/icon.component';
@@ -32,25 +31,10 @@ const Toolbar: React.FC = () => {
         if (!AuthService.isAuthenticated() || !wallet) return;
 
         setIsBalanceLoading(true);
-        try {
-            // Check cache first
-            const cachedBalance = BalanceCacheService.getBalance();
-            if (BalanceCacheService.isCacheValid()) {
-                setWalletBalance({
-                    pdaBalance: String(cachedBalance.pdaBalance),
-                    available: Number(cachedBalance.pdaBalance),
-                    locked: 0,
-                    totalDeposited: 0,
-                    totalWithdrawn: 0
-                });
-                return;
-            }
-
+        try {  
             // Cache invalid or empty, fetch fresh balance
             const balance = await UserService.getWalletBalance();
             setWalletBalance(balance);
-            // Update cache
-            BalanceCacheService.setBalance(Number(balance.pdaBalance));
         } catch (error) {
             console.error('Error fetching wallet balance:', error);
         } finally {
@@ -58,7 +42,7 @@ const Toolbar: React.FC = () => {
         }
     }, [wallet]);
 
-    const handleLogin = async () => {
+    const handleLogin = useCallback(async () => {
         if (!publicKey || !signMessage || authState === 'authenticating') return;
 
         setAuthLoading(true);
@@ -85,7 +69,6 @@ const Toolbar: React.FC = () => {
                 const balance = await UserService.getWalletBalance();
                 if (balance) {
                     setWalletBalance(balance);
-                    BalanceCacheService.setBalance(Number(balance.pdaBalance));
                 }
             } else {
                 setAuthState('unauthenticated');
@@ -103,7 +86,7 @@ const Toolbar: React.FC = () => {
         } finally {
             setAuthLoading(false);
         }
-    };
+    }, [publicKey, signMessage, authState]);
 
     useEffect(() => {
         let isMounted = true;
@@ -144,16 +127,13 @@ const Toolbar: React.FC = () => {
         if (wallet && publicKey && !AuthService.isAuthenticated() && !authLoading) {
             handleLogin();
         }
-    }, [wallet, publicKey]);
+    }, [wallet, publicKey, authLoading, handleLogin]);
 
     useEffect(() => {
         // Initial fetch
         fetchWalletBalance();
 
         // Subscribe to balance updates
-        const unsubscribe = BalanceCacheService.subscribe(fetchWalletBalance);
-
-        return () => unsubscribe();
     }, [fetchWalletBalance]);
 
     const handleDisconnect = useCallback(async () => {
@@ -162,8 +142,6 @@ const Toolbar: React.FC = () => {
         // Clear all storage
         localStorage.clear();
         sessionStorage.clear();
-        // Clear balance cache
-        BalanceCacheService.clearCache();
         // Disconnect wallet
         disconnect();
         // Reset states

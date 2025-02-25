@@ -6,8 +6,6 @@ import Icon from '../components/icon/icon.component';
 import WalletModal from '../components/WalletModal';
 import { UserService } from '../services/user.service';
 import { UserProfile } from '../types/user.interface';
-import { BalanceCacheService } from '../services/balanceCache.service';
-
 const ProfilePage: React.FC = () => {
   const { publicKey } = useWallet();
   const { connection } = useConnection();
@@ -62,7 +60,7 @@ const ProfilePage: React.FC = () => {
         try {
           const user = await UserService.getProfile();
           setUserProfile(user);
-          
+
           const balance = await connection.getBalance(publicKey);
           setWalletBalance(balance / LAMPORTS_PER_SOL);
         } catch (error) {
@@ -73,11 +71,6 @@ const ProfilePage: React.FC = () => {
 
     // Initial fetch
     fetchAndUpdateData();
-    
-    // Subscribe to balance updates
-    const unsubscribe = BalanceCacheService.subscribe(fetchAndUpdateData);
-    
-    return () => unsubscribe();
   }, [publicKey, connection]);
 
   const copyAddress = async () => {
@@ -99,8 +92,6 @@ const ProfilePage: React.FC = () => {
         const balance = await connection.getBalance(publicKey);
         setWalletBalance(balance / LAMPORTS_PER_SOL);
 
-        // Update cache
-        BalanceCacheService.setBalance(Number(user.balance.pdaBalance));
       } catch (error) {
         console.error('Error refreshing data:', error);
       }

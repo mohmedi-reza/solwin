@@ -6,8 +6,6 @@ import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { UserService } from '../services/user.service';
-import { BalanceCacheService } from '../services/balanceCache.service';
-
 interface WalletModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -129,9 +127,6 @@ const WalletModal: React.FC<WalletModalProps> = ({
     try {
       const success = await WalletService.deposit(amount);
       if (success) {
-        // Update all data and components
-        await BalanceCacheService.updateAllData();
-        
         // Show success message and close
         toast.success(`Successfully deposited ${amount.toFixed(4)} SOL`);
         setAmount(0);
@@ -163,9 +158,7 @@ const WalletModal: React.FC<WalletModalProps> = ({
     try {
       const response = await WalletService.withdraw(amount);
       if (response.success) {
-        // Update all data and components
-        await BalanceCacheService.updateAllData();
-        
+
         // Show success message and close
         toast.success(`Successfully withdrew ${amount.toFixed(4)} SOL`);
         setAmount(0);

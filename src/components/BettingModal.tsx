@@ -2,7 +2,6 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import React, { useEffect, useState } from 'react';
 import { AuthService } from '../services/auth.service';
-import { BalanceCacheService } from '../services/balanceCache.service';
 import { UserService } from '../services/user.service';
 import Icon from './icon/icon.component';
 
@@ -43,7 +42,7 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm 
         try {
           const balance = await UserService.getWalletBalance();
           setPdaBalance(Number(balance.pdaBalance));
-          
+
           const solBalance = await connection.getBalance(publicKey);
           setWalletBalance(solBalance / LAMPORTS_PER_SOL);
         } catch (error) {
@@ -54,8 +53,6 @@ const BettingModal: React.FC<BettingModalProps> = ({ isOpen, onClose, onConfirm 
 
     if (isOpen) {
       fetchAndUpdateBalances();
-      const unsubscribe = BalanceCacheService.subscribe(fetchAndUpdateBalances);
-      return () => unsubscribe();
     }
   }, [isOpen, publicKey, connection]);
 
