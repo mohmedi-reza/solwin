@@ -129,7 +129,6 @@ const GamePage: React.FC = () => {
 
   const handleBetConfirm = useCallback(async (newBet: number, newRisk: number) => {
     try {
-      // Format bet to 4 decimal places to ensure integer conversion on backend
       const formattedBet = Number(newBet.toFixed(4));
       setBet(formattedBet);
       setRisk(newRisk);
@@ -142,22 +141,29 @@ const GamePage: React.FC = () => {
         setCurrentHand(gameResult.hand);
         setHandResult(gameResult.result);
 
-        queryClient.invalidateQueries({
-          queryKey: [QUERY_KEYS.WALLET_BALANCE],
-          refetchType: 'all'
-        });
-        queryClient.invalidateQueries({
-          queryKey: [QUERY_KEYS.GAME_HISTORY],
-          refetchType: 'all'
-        });
-        queryClient.invalidateQueries({
-          queryKey: [QUERY_KEYS.USER_PROFILE],
-          refetchType: 'all'
-        });
-        queryClient.invalidateQueries({
-          queryKey: [QUERY_KEYS.LEADERBOARD],
-          refetchType: 'all'
-        });
+        // Invalidate and force refetch all relevant queries
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [QUERY_KEYS.WALLET_BALANCE],
+            refetchType: 'all'
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [QUERY_KEYS.GAME_HISTORY],
+            refetchType: 'all'
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [QUERY_KEYS.USER_PROFILE],
+            refetchType: 'all'
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [QUERY_KEYS.LEADERBOARD],
+            refetchType: 'all'
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [QUERY_KEYS.TRANSACTIONS],
+            refetchType: 'all'
+          })
+        ]);
       }, 5000);
 
     } catch (error) {

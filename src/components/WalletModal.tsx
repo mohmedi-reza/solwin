@@ -137,9 +137,21 @@ const WalletModal: React.FC<WalletModalProps> = ({
     try {
       const success = await SendSol(amount);
       if (success) {
-        // Invalidate all relevant queries
-        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WALLET_BALANCE] });
-        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_PROFILE] });
+        // Invalidate and force refetch all relevant queries
+        await Promise.all([
+          queryClient.invalidateQueries({ 
+            queryKey: [QUERY_KEYS.WALLET_BALANCE],
+            refetchType: 'all'
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: [QUERY_KEYS.USER_PROFILE],
+            refetchType: 'all'
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: [QUERY_KEYS.TRANSACTIONS],
+            refetchType: 'all'
+          })
+        ]);
         
         toast.success(`Successfully deposited ${amount.toFixed(4)} SOL`);
         setInputValue('');
@@ -170,9 +182,21 @@ const WalletModal: React.FC<WalletModalProps> = ({
     try {
       const success = await withdrawFromUserPDA(amount);
       if (success) {
-        // Invalidate all relevant queries
-        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WALLET_BALANCE] });
-        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_PROFILE] });
+        // Invalidate and force refetch all relevant queries
+        await Promise.all([
+          queryClient.invalidateQueries({ 
+            queryKey: [QUERY_KEYS.WALLET_BALANCE],
+            refetchType: 'all'
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: [QUERY_KEYS.USER_PROFILE],
+            refetchType: 'all'
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: [QUERY_KEYS.TRANSACTIONS],
+            refetchType: 'all'
+          })
+        ]);
 
         toast.success(`Successfully withdrew ${amount.toFixed(4)} SOL`);
         setInputValue('');
@@ -207,6 +231,13 @@ const WalletModal: React.FC<WalletModalProps> = ({
       fetchPdaBalance();
     }
   }, [isOpen, publicKey]);
+
+  // Add new function to handle modal close
+  const handleClose = () => {
+    if (!isLoading) {
+      onClose();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -256,12 +287,29 @@ const WalletModal: React.FC<WalletModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
-      <div className="bg-base-100 rounded-2xl p-8 w-full max-w-md space-y-7 shadow-xl border border-base-300">
+      <div className="bg-base-100 rounded-2xl p-8 w-full max-w-md space-y-7 shadow-xl border border-base-300 relative">
+        {/* Add overlay when loading - Move it here and adjust positioning */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-base-100/80 backdrop-blur-sm flex items-center justify-center rounded-2xl z-50">
+            <div className="text-center space-y-3 p-4">
+              <span className="loading loading-spinner loading-lg text-primary"></span>
+              <p className="font-medium text-lg">
+                {activeTab === 'deposit' ? 'Processing Deposit...' : 'Processing Withdrawal...'}
+              </p>
+              <p className="text-base-content/60">Please wait while we process your transaction</p>
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Wallet Operations
           </h2>
-          <button onClick={onClose} className="btn btn-ghost btn-circle hover:rotate-90 transition-transform">
+          <button 
+            onClick={handleClose} 
+            className={`btn btn-ghost btn-circle hover:rotate-90 transition-transform ${isLoading ? 'btn-disabled' : ''}`}
+            disabled={isLoading}
+          >
             <Icon name="closeCircle" className="text-2xl" />
           </button>
         </div>
@@ -372,7 +420,7 @@ const WalletModal: React.FC<WalletModalProps> = ({
         {/* Action Button */}
         <button
           className={`btn w-full h-12 text-lg font-bold shadow-lg
-            ${isLoading ? 'loading' : ''}
+            ${isLoading ? 'btn-disabled' : ''}
             ${isValid
               ? 'bg-primary hover:scale-[1.02] text-primary-content'
               : 'bg accent-accent to-secondary border-none text-primary-content opacity-50'
@@ -389,7 +437,10 @@ const WalletModal: React.FC<WalletModalProps> = ({
           }
         >
           {isLoading ? (
-            <span className="loading bg-primary loading-spinner loading-md size-6"></span>
+            <div className="flex items-center gap-2">
+              <span className="loading loading-spinner loading-sm"></span>
+              <span>{activeTab === 'deposit' ? 'Processing Deposit...' : 'Processing Withdrawal...'}</span>
+            </div>
           ) : (
             <div className="flex items-center gap-3">
               <Icon

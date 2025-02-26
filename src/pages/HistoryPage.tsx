@@ -23,7 +23,8 @@ const HistoryPage: React.FC = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isLoading
+    isLoading,
+    refetch
   } = useTransactions(20);
 
   // Keep just the transactions data
@@ -40,6 +41,23 @@ const HistoryPage: React.FC = () => {
       fetchNextPage();
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refetch();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refetch]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const filteredTransactions = transactions.filter(tx => {
     const txDate = new Date(tx.timestamp);

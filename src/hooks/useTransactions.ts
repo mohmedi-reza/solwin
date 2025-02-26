@@ -25,7 +25,12 @@ export function useTransactions(limit: number = 20) {
             before: lastPage.pagination.nextBeforeSignature
           }
         : undefined,
-    staleTime: 30000, // Consider data stale after 30 seconds
+    staleTime: 0, // Always consider data stale
+    gcTime: 0, // Changed from cacheTime to gcTime
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
+    refetchInterval: 5000, // Refetch every 5 seconds
     retry: 2,
     throwOnError: (error: Error) => {
       toast.error(`Failed to fetch transactions: ${error.message}`);
