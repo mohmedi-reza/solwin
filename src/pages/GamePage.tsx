@@ -352,11 +352,11 @@ const GamePage: React.FC = () => {
                 <div className="text-2xl font-bold text-primary">50x</div>
                 <p className="text-base-content/60 text-sm">Ace through 10, same suit</p>
                 <div className="mt-2 flex -space-x-4">
-                  <img src="/assets/Hearts-01.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 " />
-                  <img src="/assets/Hearts-13.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Hearts-12.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Hearts-11.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Hearts-10.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-01.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 " />
+                  <img src="/assets/Hearts-13.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-12.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-11.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-10.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
                 </div>
               </div>
             </div>
@@ -366,11 +366,11 @@ const GamePage: React.FC = () => {
                 <div className="text-2xl font-bold text-primary">10x</div>
                 <p className="text-base-content/60 text-sm">Five consecutive cards, same suit</p>
                 <div className="mt-2 flex -space-x-4">
-                  <img src="/assets/Spades-09.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 " />
-                  <img src="/assets/Spades-08.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Spades-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Spades-06.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Spades-05.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-09.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 " />
+                  <img src="/assets/Spades-08.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-07.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-06.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-05.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
                 </div>
               </div>
             </div>
@@ -380,11 +380,11 @@ const GamePage: React.FC = () => {
                 <div className="text-2xl font-bold text-primary">5x</div>
                 <p className="text-base-content/60 text-sm">Four cards of same rank</p>
                 <div className="mt-2 flex -space-x-4">
-                  <img src="/assets/Hearts-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 " />
-                  <img src="/assets/Diamonds-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Clubs-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Spades-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Hearts-02.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px] opacity-50" />
+                  <img src="/assets/Hearts-07.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 " />
+                  <img src="/assets/Diamonds-07.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Clubs-07.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-07.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-02.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
                 </div>
               </div>
             </div>
@@ -394,11 +394,11 @@ const GamePage: React.FC = () => {
                 <div className="text-2xl font-bold text-primary">4x</div>
                 <p className="text-base-content/60 text-sm">Three of a kind with a pair</p>
                 <div className="mt-2 flex -space-x-4">
-                  <img src="/assets/Hearts-04.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 " />
-                  <img src="/assets/Diamonds-04.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Clubs-04.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Hearts-09.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Spades-09.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-04.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 " />
+                  <img src="/assets/Diamonds-04.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Clubs-04.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-09.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-09.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
                 </div>
               </div>
             </div>
@@ -414,9 +414,9 @@ const GamePage: React.FC = () => {
               {recentWinners.map((winner, index) => (
                 <div key={index} className="flex items-center justify-between p-2 bg-base-100 rounded-lg animate-slideRight" style={{ animationDelay: `${index * 0.1}s` }}>
                   <div className="flex items-center gap-2">
-                    <div className="avatar placeholder">
-                      <div className="bg-primary text-white rounded-full w-8">
-                        <span className="text-xs">{winner.pdaAddress.slice(0, 2)}</span>
+                    <div className="avatar placeholder ">
+                      <div className="bg-primary flex items-center justify-center  text-white rounded-full p-2">
+                        <Icon className='text-xl' name="userTick"/>
                       </div>
                     </div>
                     <div className="flex flex-col gap-1">

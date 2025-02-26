@@ -223,7 +223,7 @@ const HomePage: React.FC = () => {
           {/* Game Cards Grid - Better responsive columns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {filteredCards.map((card) => (
-              <div key={card.id} className="card bg-base-200 shadow-2xl border border-white/15 hover:scale[1.2] rounded-3xl hover:shadow-xl transition-all flex flex-col min-h-[400px]  overflow-hidden">
+              <div key={card.id} className="card bg-base-200 border border-white/15 hover:scale[1.2] rounded-3xl hover:shadow-xl transition-all flex flex-col min-h-[400px]  overflow-hidden">
                 {/* Game Image - Simplified structure */}
                 <div className="relative h-36 sm:h-40 lg:h-48">
                   {/* Base gradient overlay */}
