@@ -95,7 +95,6 @@ export class LeaderboardService {
   static async getTopPlayers(page: number = 1, limit: number = 10): Promise<AggregatedLeaderboardResponse> {
     try {
       const publicClient = createPublicClient();
-      // Use history/all endpoint
       const response = await publicClient.get<LeaderboardResponse>(
         `${this.BASE_PATH}/history/all?page=${page}&limit=100`
       );
@@ -124,7 +123,6 @@ export class LeaderboardService {
         acc[pdaAddress].totalWinnings += entry.gameHistory.winnings;
         acc[pdaAddress].gamesPlayed += 1;
 
-        // Update best hand if current hand has higher winnings
         if (entry.gameHistory.winnings > acc[pdaAddress].bestHand.winnings) {
           acc[pdaAddress].bestHand = {
             handType: entry.gameHistory.handType,
@@ -136,18 +134,21 @@ export class LeaderboardService {
       }, {});
 
       // Convert to array and sort by total winnings
-      const sortedData = Object.values(aggregatedData)
+      const allPlayers = Object.values(aggregatedData)
         .sort((a, b) => b.totalWinnings - a.totalWinnings)
-        .map((player, index) => ({ ...player, rank: index + 1 }))
-        .slice((page - 1) * limit, page * limit);
+        .map((player, index) => ({ ...player, rank: index + 1 }));
 
-      // Calculate pagination info
-      const totalPlayers = Object.keys(aggregatedData).length;
+      // Manual pagination
+      const start = (page - 1) * limit;
+      const end = start + limit;
+      const paginatedData = allPlayers.slice(start, end);
+
+      const totalPlayers = allPlayers.length;
       const totalPages = Math.ceil(totalPlayers / limit);
 
       return {
         success: true,
-        data: sortedData,
+        data: paginatedData,
         pagination: {
           total: totalPlayers,
           page,
