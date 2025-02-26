@@ -8,6 +8,10 @@ import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { IconName } from '../components/icon/iconPack';
 import { useWalletBalance } from '../hooks/useWalletBalance';
 import { usePlayerHistory } from '../hooks/usePlayerHistory';
+import { useInView } from 'react-intersection-observer';
+
+type SortField = 'timestamp' | 'buyInAmount' | 'risk' | 'winnings';
+type SortOrder = 'asc' | 'desc';
 
 const getRelativeTime = (timestamp: string) => {
   const now = new Date();
@@ -31,14 +35,34 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const { data: playerHistory = [] } = usePlayerHistory(100);
+  const { 
+    data: playerHistoryPages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = usePlayerHistory(10);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const { data: walletData } = useWalletBalance();
 
-  // Generate stats from player history
+  // Add intersection observer hook
+  const { ref, inView } = useInView();
+
+  // Add inside ProfilePage component, near other state declarations
+  const [sortField, setSortField] = useState<SortField>('timestamp');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  // Add effect for infinite scrolling
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Update the stats calculation to handle paginated data
   const stats = useMemo(() => {
-    const totalGames = playerHistory.length;
-    const wins = playerHistory.filter(game => game.winnings > 0).length;
+    const allGames = playerHistoryPages?.pages.flatMap(page => page.data) || [];
+    const totalGames = allGames.length;
+    const wins = allGames.filter(game => game.winnings > 0).length;
     const losses = totalGames - wins;
     const winRate = totalGames ? Math.round((wins / totalGames) * 100) : 0;
     const lossRate = totalGames ? Math.round((losses / totalGames) * 100) : 0;
@@ -49,13 +73,10 @@ const ProfilePage: React.FC = () => {
       losses,
       winRate,
       lossRate,
-      totalWinnings: playerHistory.reduce((sum, game) => sum + game.winnings, 0),
-      totalWagered: playerHistory.reduce((sum, game) => sum + game.buyInAmount, 0),
+      totalWinnings: allGames.reduce((sum, game) => sum + game.winnings, 0),
+      totalWagered: allGames.reduce((sum, game) => sum + game.buyInAmount, 0),
     };
-  }, [playerHistory]);
-
-  // Get recent games (last 10)
-  const recentGames = playerHistory.slice(0, 10);
+  }, [playerHistoryPages]);
 
   const handleWalletOperationSuccess = useCallback(() => {
     // Mock operation complete - no state updates needed
@@ -117,9 +138,9 @@ const ProfilePage: React.FC = () => {
         description: "Won 5 games in a row",
         icon: "chart" as IconName,
         color: "success",
-        isUnlocked: playerHistory.some((_, index) =>
-          playerHistory.slice(index, index + 5).length === 5 &&
-          playerHistory.slice(index, index + 5).every(game => game.winnings > 0)
+        isUnlocked: playerHistoryPages?.pages.flatMap(page => page.data).some((_, index) =>
+          playerHistoryPages?.pages.flatMap(page => page.data).slice(index, index + 5).length === 5 &&
+          playerHistoryPages?.pages.flatMap(page => page.data).slice(index, index + 5).every(game => game.winnings > 0)
         )
       },
       veteran: {
@@ -130,7 +151,7 @@ const ProfilePage: React.FC = () => {
         isUnlocked: stats.totalGames >= 100
       }
     };
-  }, [playerHistory, stats]);
+  }, [playerHistoryPages, stats]);
 
   // Replace the achievements section with this updated version
   const renderAchievements = () => (
@@ -180,6 +201,16 @@ const ProfilePage: React.FC = () => {
     </div>
   );
 
+  // Add this function before renderRecentActivity
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
+  };
+
   if (!publicKey) {
     return (
       <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center">
@@ -202,44 +233,86 @@ const ProfilePage: React.FC = () => {
       </div>
 
       <div className="overflow-x-auto">
-        {recentGames.length > 0 ? (
-          <table className="table w-full">
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Hand</th>
-                <th>Bet</th>
-                <th>Risk</th>
-                <th>Result</th>
-                <th>Net Win</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentGames.map((game, index) => (
-                <tr key={index} className="hover">
-                  <td className="text-sm text-base-content/70">
-                    {getRelativeTime(game.timestamp)}
-                    <div className="text-xs opacity-50">
-                      {new Date(game.timestamp).toLocaleTimeString()}
-                    </div>
-                  </td>
-                  <td>
-                    <span className="badge badge-ghost">{game.handType}</span>
-                  </td>
-                  <td>{game.buyInAmount.toFixed(3)} SOL</td>
-                  <td>{game.risk}x</td>
-                  <td>
-                    <span className={`badge ${game.winnings > 0 ? 'badge-success' : 'badge-error'}`}>
-                      {game.winnings > 0 ? 'Won' : 'Lost'}
-                    </span>
-                  </td>
-                  <td className={game.winnings > 0 ? 'text-success' : 'text-error'}>
-                    {game.winnings > 0 ? '+' : ''}{game.winnings.toFixed(3)} SOL
-                  </td>
+        {playerHistoryPages?.pages[0].data.length ? (
+          <>
+            <table className="table w-full">
+              <thead>
+                <tr>
+                  <th onClick={() => handleSort('timestamp')} className="cursor-pointer hover:bg-base-300">
+                    Time {sortField === 'timestamp' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th>Hand</th>
+                  <th onClick={() => handleSort('buyInAmount')} className="cursor-pointer hover:bg-base-300">
+                    Bet {sortField === 'buyInAmount' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th onClick={() => handleSort('risk')} className="cursor-pointer hover:bg-base-300">
+                    Risk {sortField === 'risk' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th>Result</th>
+                  <th onClick={() => handleSort('winnings')} className="cursor-pointer hover:bg-base-300">
+                    Net Win {sortField === 'winnings' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {playerHistoryPages.pages.map((page) =>
+                  [...page.data]
+                    .sort((a, b) => {
+                      const modifier = sortOrder === 'asc' ? 1 : -1;
+                      switch (sortField) {
+                        case 'timestamp':
+                          return (new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) * modifier;
+                        case 'buyInAmount':
+                          return (b.buyInAmount - a.buyInAmount) * modifier;
+                        case 'risk':
+                          return (b.risk - a.risk) * modifier;
+                        case 'winnings':
+                          return (b.winnings - a.winnings) * modifier;
+                        default:
+                          return 0;
+                      }
+                    })
+                    .map((game, index) => (
+                      <tr key={`${game.timestamp}-${index}`} className="hover">
+                        <td className="text-sm text-base-content/70">
+                          {getRelativeTime(game.timestamp)}
+                          <div className="text-xs opacity-50">
+                            {new Date(game.timestamp).toLocaleTimeString()}
+                          </div>
+                        </td>
+                        <td>
+                          <span className="badge badge-ghost">{game.handType}</span>
+                        </td>
+                        <td>{game.buyInAmount.toFixed(3)} SOL</td>
+                        <td>{game.risk}x</td>
+                        <td>
+                          <span className={`badge ${game.winnings > 0 ? 'badge-success' : 'badge-error'}`}>
+                            {game.winnings > 0 ? 'Won' : 'Lost'}
+                          </span>
+                        </td>
+                        <td className={game.winnings > 0 ? 'text-success' : 'text-error'}>
+                          {game.winnings > 0 ? '+' : ''}{game.winnings.toFixed(3)} SOL
+                        </td>
+                      </tr>
+                    ))
+                )}
+              </tbody>
+            </table>
+
+            {/* Infinite scroll trigger */}
+            <div 
+              ref={ref}
+              className="py-4 text-center"
+            >
+              {isFetchingNextPage ? (
+                <div className="loading loading-spinner loading-md"></div>
+              ) : hasNextPage ? (
+                <span className="text-base-content/60">Loading more...</span>
+              ) : (
+                <span className="text-base-content/60">No more games to load</span>
+              )}
+            </div>
+          </>
         ) : (
           <div className="text-center py-8">
             <Icon name="game" className="text-4xl text-base-content/20 mx-auto mb-2" />

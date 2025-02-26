@@ -5,13 +5,15 @@ import { toast } from 'react-toastify';
 import BettingModal from '../components/BettingModal';
 import Icon from '../components/icon/icon.component';
 import WalletModal from '../components/WalletModal';
-import { useLeaderboard } from '../hooks/useLeaderboard';
+import { useLeaderboard, useTopPlayers } from '../hooks/useLeaderboard';
 import { useWalletBalance } from '../hooks/useWalletBalance';
 import { AuthService } from '../services/auth.service';
 import { GameService } from '../services/game.service';
 import { Card, HandResult } from '../types/poker.interface';
 import { useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS } from '../hooks/useWalletBalance';
+import { useInView } from 'react-intersection-observer';
+import Leaderboard from '../components/Leaderboard';
 
 interface ShufflingCard extends Card {
   key: number;
@@ -33,8 +35,36 @@ const GamePage: React.FC = () => {
   const rulesRef = useRef<HTMLDivElement>(null);
 
   const { data: walletData } = useWalletBalance();
-  const { data: leaderboard = [] } = useLeaderboard();
+  const {
+    data: leaderboardPages,
+    fetchNextPage: fetchNextLeaderboard,
+    hasNextPage: hasNextLeaderboard,
+    isFetchingNextPage: isFetchingNextLeaderboard
+  } = useLeaderboard();
   const queryClient = useQueryClient();
+
+  const { ref: leaderboardRef, inView: leaderboardInView } = useInView();
+
+  const {
+    data: topPlayersPages,
+    fetchNextPage: fetchNextTopPlayers,
+    hasNextPage: hasNextTopPlayers,
+    isFetchingNextPage: isFetchingNextTopPlayers
+  } = useTopPlayers();
+
+  const { ref: topPlayersRef, inView: topPlayersInView } = useInView();
+
+  useEffect(() => {
+    if (leaderboardInView && hasNextLeaderboard && !isFetchingNextLeaderboard) {
+      fetchNextLeaderboard();
+    }
+  }, [leaderboardInView, hasNextLeaderboard, isFetchingNextLeaderboard, fetchNextLeaderboard]);
+
+  useEffect(() => {
+    if (topPlayersInView && hasNextTopPlayers && !isFetchingNextTopPlayers) {
+      fetchNextTopPlayers();
+    }
+  }, [topPlayersInView, hasNextTopPlayers, isFetchingNextTopPlayers, fetchNextTopPlayers]);
 
   const scrollToRules = () => {
     rulesRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -109,19 +139,19 @@ const GamePage: React.FC = () => {
         setCurrentHand(gameResult.hand);
         setHandResult(gameResult.result);
 
-        queryClient.invalidateQueries({ 
+        queryClient.invalidateQueries({
           queryKey: [QUERY_KEYS.WALLET_BALANCE],
           refetchType: 'all'
         });
-        queryClient.invalidateQueries({ 
+        queryClient.invalidateQueries({
           queryKey: [QUERY_KEYS.GAME_HISTORY],
           refetchType: 'all'
         });
-        queryClient.invalidateQueries({ 
+        queryClient.invalidateQueries({
           queryKey: [QUERY_KEYS.USER_PROFILE],
           refetchType: 'all'
         });
-        queryClient.invalidateQueries({ 
+        queryClient.invalidateQueries({
           queryKey: [QUERY_KEYS.LEADERBOARD],
           refetchType: 'all'
         });
@@ -143,19 +173,6 @@ const GamePage: React.FC = () => {
 
   const goToHomePage = () => {
     navigate('/');
-  };
-
-  const getRankBadge = (index: number) => {
-    switch (index) {
-      case 0:
-        return <span className="badge badge-primary gap-1">🥇 1st</span>;
-      case 1:
-        return <span className="badge badge-secondary gap-1">🥈 2nd</span>;
-      case 2:
-        return <span className="badge badge-accent gap-1">🥉 3rd</span>;
-      default:
-        return null;
-    }
   };
 
   const renderReadyToPlay = () => {
@@ -363,37 +380,16 @@ const GamePage: React.FC = () => {
           </div>
 
           {/* Recent Winners */}
-          <div className="bg-base-200 rounded-xl p-6">
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <Icon name="cup" className="text-primary text-2xl" />
-              Recent Big Wins
-            </h3>
-            <div className="space-y-3">
-              {leaderboard.map((winner, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-base-100 rounded-lg animate-slideRight" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <div className="flex items-center gap-2">
-                    <div className="avatar placeholder ">
-                      <div className="bg-primary flex items-center justify-center  text-white rounded-full p-2">
-                        <Icon className='text-xl' name="userTick" />
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">{winner.pdaAddress.slice(0, 6)}...{winner.pdaAddress.slice(-4)}</span>
-                        {getRankBadge(index)}
-                      </div>
-                      <div className="text-sm text-base-content/60">{winner.gameHistory.handType}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className={`font-bold ${winner.gameHistory.winnings > 0 ? 'text-success' : 'text-error'}`}>
-                      {winner.gameHistory.winnings > 0 ? '+' : ''}{winner.gameHistory.winnings.toFixed(3)} SOL
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <Leaderboard
+            recentData={leaderboardPages?.pages.flatMap(page => page.data) || []}
+            topData={topPlayersPages?.pages.flatMap(page => page.data) || []}
+            isLoadingRecent={isFetchingNextLeaderboard}
+            isLoadingTop={isFetchingNextTopPlayers}
+            hasMoreRecent={hasNextLeaderboard}
+            hasMoreTop={hasNextTopPlayers}
+            recentRef={leaderboardRef}
+            topRef={topPlayersRef}
+          />
 
           {/* Game Rules Collapse */}
           <div ref={rulesRef} className="bg-base-200 rounded-xl overflow-hidden">

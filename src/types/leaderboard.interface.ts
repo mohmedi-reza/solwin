@@ -1,16 +1,14 @@
 export interface LeaderboardEntry {
-  _id: string;
   pdaAddress: string;
+  totalWinnings: number;
+  gamesPlayed: number;
+  bestHand: {
+    handType: string;
+    winnings: number;
+  };
   gameHistory: {
     timestamp: string;
     winnings: number;
-    buyInAmount: number;
-    hand: Array<{
-      suit: string;
-      value: number;
-      display: string;
-      imagePath: string;
-    }>;
     handType: string;
   };
 }
@@ -19,4 +17,15 @@ export interface LeaderboardResponse {
   success: boolean;
   error?: string;
   data: LeaderboardEntry[];
+}
+
+export interface AggregatedLeaderboardEntry {
+  pdaAddress: string;
+  totalWinnings: number;
+  gamesPlayed: number;
+  bestHand: {
+    handType: string;
+    winnings: number;
+  };
+  rank?: number;
 }
