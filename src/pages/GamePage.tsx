@@ -1,19 +1,16 @@
 import { useWallet } from '@solana/wallet-adapter-react';
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useInView } from 'react-intersection-observer';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import BettingModal from '../components/BettingModal';
+import BettingSection from '../components/BettingSection';
 import Icon from '../components/icon/icon.component';
-import WalletModal from '../components/WalletModal';
+import Leaderboard from '../components/Leaderboard';
 import { useLeaderboard, useTopPlayers } from '../hooks/useLeaderboard';
-import { useWalletBalance } from '../hooks/useWalletBalance';
-import { AuthService } from '../services/auth.service';
+import { QUERY_KEYS, useWalletBalance } from '../hooks/useWalletBalance';
 import { GameService } from '../services/game.service';
 import { Card, HandResult } from '../types/poker.interface';
-import { useQueryClient } from '@tanstack/react-query';
-import { QUERY_KEYS } from '../hooks/useWalletBalance';
-import { useInView } from 'react-intersection-observer';
-import Leaderboard from '../components/Leaderboard';
 
 interface ShufflingCard extends Card {
   key: number;
@@ -29,7 +26,6 @@ const GamePage: React.FC = () => {
   const [bet, setBet] = useState(10);
   const [risk, setRisk] = useState(1.0);
   const [shufflingCards, setShufflingCards] = useState<ShufflingCard[]>([]);
-  const [showWalletModal, setShowWalletModal] = useState(false);
   const [isRulesOpen, setIsRulesOpen] = useState(true);
 
   const rulesRef = useRef<HTMLDivElement>(null);
@@ -106,32 +102,41 @@ const GamePage: React.FC = () => {
     }
   }, [isDrawing]);
 
-  const handleWalletSuccess = useCallback(async () => {
-    if (publicKey && AuthService.isAuthenticated()) {
-      try {
-        // No need to fetch balance here, as it's handled by useWalletBalance
-      } catch (error) {
-        console.error('Error refreshing balances:', error);
-      }
-    }
-  }, [publicKey]);
+  // const handleWalletSuccess = useCallback(async () => {
+  //   if (publicKey && AuthService.isAuthenticated()) {
+  //     try {
+  //       // No need to fetch balance here, as it's handled by useWalletBalance
+  //     } catch (error) {
+  //       console.error('Error refreshing balances:', error);
+  //     }
+  //   }
+  // }, [publicKey]);
 
   const handleStartGame = () => {
     if (!walletData?.balance || walletData.balance < 0.1) {
-      setShowWalletModal(true);
+      toast.error('Insufficient balance to play');
       return;
     }
-    setShowBettingModal(true);
+    
+    // If there was a previous game, start new game with same bet/risk
+    if (currentHand.length > 0) {
+      handleBetConfirm(bet, risk);
+    } else {
+      // First game - show betting modal
+      setShowBettingModal(true);
+    }
   };
 
   const handleBetConfirm = useCallback(async (newBet: number, newRisk: number) => {
     try {
-      setBet(newBet);
+      // Format bet to 4 decimal places to ensure integer conversion on backend
+      const formattedBet = Number(newBet.toFixed(4));
+      setBet(formattedBet);
       setRisk(newRisk);
       setIsDrawing(true);
 
-      console.log('Starting game with:', { newBet, newRisk });
-      const gameResult = await GameService.createNewGame(newBet, newRisk);
+      console.log('Starting game with:', { formattedBet, newRisk });
+      const gameResult = await GameService.createNewGame(formattedBet, newRisk);
       console.log('Game result:', gameResult);
 
       setTimeout(async () => {
@@ -177,92 +182,113 @@ const GamePage: React.FC = () => {
 
   const renderReadyToPlay = () => {
     return (
-      <div className=" min-h-[calc(100vh-5rem)] flex flex-col justify-start  bg-base-100">
+      <div className="min-h-[calc(100vh-5rem)] flex flex-col justify-start bg-base-100">
         <div className="relative w-full max-w-6xl space-y-12">
-          {/* Hero Section with CTA */}
-          <div className="relative py-8 sm:py-12 md:py-16 px-4 sm:px-6 md:px-8 rounded-3xl overflow-hidden">
-            {/* Back Button */}
-            <button
-              onClick={goToHomePage}
-              className="absolute rounded-2xl btn-soft z-50 left-4 sm:left-6 top-4 sm:top-6 btn btn-square backdrop-blur-sm hover:bg-base-200/80 transition-all"
-            >
-              <Icon name="arrowLeft" className="text-xl sm:text-2xl" />
-            </button>
+          {/* Show either Hero Section or Betting Interface */}
+          <div className="relative py-8 sm:py-12 md:py-16 px-4 sm:px-6 md:px-8 rounded-3xl border border-base-300 overflow-hidden">
+            {/* Background Effects - Different based on view */}
+            {!showBettingModal ? (
+              <>
+                <div className="absolute inset-0 z-0 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10"></div>
+                <div className="absolute inset-0 z-0 bg-[url('/assets/pattern.png')] opacity-5"></div>
+                <div className="absolute -top-24 -right-24 z-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute -bottom-24 -left-24 z-0 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+              </>
+            ) : (
+              <>
+                <div className="absolute inset-0 z-0 bg-gradient-to-b from-white/5 to-base-200/50"></div>
+                <div className="absolute inset-0 z-0 bg-[url('/assets/pattern.png')] opacity-[0.02]"></div>
+              </>
+            )}
 
-            {/* Background Effects */}
-            <div className="absolute inset-0 z-0 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10"></div>
-            <div className="absolute inset-0 z-0 bg-[url('/assets/pattern.png')] opacity-5"></div>
-            <div className="absolute -top-24 -right-24 z-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute -bottom-24 -left-24 z-0 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-
-            <div className="relative z-10 text-center space-y-4 sm:space-y-6 md:space-y-8">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mt-16">
-                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  Ready to Test Your Luck?
-                </span>
-              </h1>
-              <p className="text-lg sm:text-xl text-base-content/60 max-w-2xl mx-auto">
-                Place your bet and try to win big with the best poker hands!
-              </p>
-
-              {/* Main CTA */}
-              <div className="flex flex-col items-center gap-6 mt-8">
-                <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-primary via-secondary to-primary rounded-2xl blur-lg group-hover:blur-xl transition-all"></div>
+            {/* Content */}
+            <div className="">
+              {!showBettingModal ? (
+                /* Hero Section with CTA */
+                <div className="text-center space-y-4 sm:space-y-6 md:space-y-8">
+                  {/* Back Button */}
                   <button
-                    onClick={handleStartGame}
-                    className="relative text-nowrap btn btn-primary btn-lg text-xl px-4 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
+                    onClick={goToHomePage}
+                    className="absolute rounded-2xl btn-soft z-50 left-4 sm:left-6 top-4 sm:top-6 btn btn-square backdrop-blur-sm hover:bg-base-200/80 transition-all"
                   >
-                    {!walletData?.balance || walletData.balance < 0.1 ? (
-                      <>
-                        <Icon name="wallet" className="text-3xl" />
-                        Deposit to Start Playing
-                        <div className="absolute top-0 right-0 -mt-2 -mr-2">
-                          <span className="relative flex h-4 w-4">
-                            <span className="animate-ping absolute inline-flex status status-error size-3"></span>
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <Icon name="game" className="text-3xl" />
-                        Place Your Bet & Play Now
-                        <div className="absolute top-0 right-0 -mt-2 -mr-2">
-                          <span className="relative flex h-4 w-4">
-                            <span className="animate-ping absolute inline-flex status status-error size-3"></span>
-                          </span>
-                        </div>
-                      </>
-                    )}
+                    <Icon name="arrowLeft" className="text-xl sm:text-2xl" />
                   </button>
-                </div>
 
-                <div className="flex items-center gap-4 text-base-content/60">
-                  <div className="flex items-center gap-2">
-                    <Icon name="wallet" className="text-xl" />
-                    Min Bet: $10
-                  </div>
-                  <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
-                  <div className="flex items-center gap-2">
-                    <Icon name="cup" className="text-xl" />
-                    Max Win: 50x
-                  </div>
-                  <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
-                  <div className="flex items-center gap-2">
-                    <Icon name="cloudLightning" className="text-xl" />
-                    Instant Payouts
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mt-16">
+                    <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                      Ready to Test Your Luck?
+                    </span>
+                  </h1>
+                  <p className="text-lg sm:text-xl text-base-content/60 max-w-2xl mx-auto">
+                    Place your bet and try to win big with the best poker hands!
+                  </p>
+
+                  {/* Main CTA */}
+                  <div className="flex flex-col items-center gap-6 mt-8">
+                    <div className="relative group">
+                      <div className="absolute -inset-1 bg-gradient-to-r from-primary via-secondary to-primary rounded-2xl blur-lg group-hover:blur-xl transition-all"></div>
+                      <button
+                        onClick={handleStartGame}
+                        className="relative text-nowrap btn btn-primary btn-lg text-xl px-4 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
+                      >
+                        {!walletData?.balance || walletData.balance < 0.1 ? (
+                          <>
+                            <Icon name="wallet" className="text-3xl" />
+                            Deposit to Start Playing
+                            <div className="absolute top-0 right-0 -mt-2 -mr-2">
+                              <span className="relative flex h-4 w-4">
+                                <span className="animate-ping absolute inline-flex status status-error size-3"></span>
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <Icon name="game" className="text-3xl" />
+                            Place Your Bet & Play Now
+                            <div className="absolute top-0 right-0 -mt-2 -mr-2">
+                              <span className="relative flex h-4 w-4">
+                                <span className="animate-ping absolute inline-flex status status-error size-3"></span>
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-base-content/60">
+                      <div className="flex items-center gap-2">
+                        <Icon name="wallet" className="text-xl" />
+                        Min Bet: $10
+                      </div>
+                      <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
+                      <div className="flex items-center gap-2">
+                        <Icon name="cup" className="text-xl" />
+                        Max Win: 50x
+                      </div>
+                      <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
+                      <div className="flex items-center gap-2">
+                        <Icon name="cloudLightning" className="text-xl" />
+                        Instant Payouts
+                      </div>
+                    </div>
+
+                    {/* Learn More Button */}
+                    <button
+                      onClick={scrollToRules}
+                      className="btn btn-outline gap-2 text-base-content/60 hover:text-primary transition-colors"
+                    >
+                      Learn More
+                      <Icon name="arrowBottom" className="text-lg animate-bounce" />
+                    </button>
                   </div>
                 </div>
-
-                {/* Learn More Button */}
-                <button
-                  onClick={scrollToRules}
-                  className="btn btn-outline gap-2 text-base-content/60 hover:text-primary transition-colors"
-                >
-                  Learn More
-                  <Icon name="arrowBottom" className="text-lg animate-bounce" />
-                </button>
-              </div>
+              ) : (
+                /* Betting Interface */
+                <BettingSection
+                  onClose={() => setShowBettingModal(false)}
+                  onConfirm={handleBetConfirm}
+                />
+              )}
             </div>
           </div>
 
@@ -518,9 +544,7 @@ const GamePage: React.FC = () => {
 
   return (
     <div className="min-h-[calc(100vh-5rem)] flex flex-col">
-      <div className="w-full max-w-6xl mx-auto  flex-1 flex flex-col">
-        {/* Balance Header */}
-
+      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col">
         {/* Ready to Play */}
         {!currentHand.length && !isDrawing && renderReadyToPlay()}
 
@@ -772,21 +796,6 @@ const GamePage: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* Add WalletModal */}
-        <WalletModal
-          isOpen={showWalletModal}
-          onClose={() => setShowWalletModal(false)}
-          walletBalance={walletData?.balance || 0}
-          onSuccess={handleWalletSuccess}
-        />
-
-        {/* Existing BettingModal */}
-        <BettingModal
-          isOpen={showBettingModal}
-          onClose={() => setShowBettingModal(false)}
-          onConfirm={handleBetConfirm}
-        />
       </div>
     </div>
   );
