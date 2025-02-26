@@ -1,33 +1,44 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { createRequire } from "module";
 import tailwindcss from "@tailwindcss/vite";
-import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
-
-const require = createRequire(import.meta.url);
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    nodePolyfills({
+      include: ['buffer', 'process'],
+      globals: {
+        Buffer: true,
+        global: true,
+        process: true
+      },
+    }),
+  ],
+  define: {
+    'process.env': {},
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    exclude: [
+      'vite-plugin-node-polyfills/shims/buffer',
+      'vite-plugin-node-polyfills/shims/process',
+      'vite-plugin-node-polyfills/shims/global'
+    ],
+    esbuildOptions: {
+      define: {
+        global: 'globalThis'
+      },
+    },
+  },
   resolve: {
     alias: {
-      buffer: require.resolve("buffer/"),
-      process: require.resolve("process/browser"),
+      buffer: 'buffer/',
+      process: 'process/browser',
       stream: 'stream-browserify',
       zlib: 'browserify-zlib',
       util: 'util',
-    },
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      define: {
-        global: "globalThis",
-      },
-      plugins: [
-        NodeGlobalsPolyfillPlugin({
-          process: true,
-          buffer: true,
-        }),
-      ],
     },
   },
   build: {
