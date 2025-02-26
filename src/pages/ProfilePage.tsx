@@ -8,12 +8,13 @@ import { LeaderboardService } from '../services/leaderboard.service';
 import { PlayerHistory } from '../types/user.interface';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { UserService } from '../services/user.service';
+import { IconName } from '../components/icon/iconPack';
 
 const getRelativeTime = (timestamp: string) => {
   const now = new Date();
   const date = new Date(timestamp);
   const diff = now.getTime() - date.getTime();
-  
+
   const seconds = Math.floor(diff / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
@@ -129,6 +130,94 @@ const ProfilePage: React.FC = () => {
   useEffect(() => {
     fetchPdaBalance();
   }, [fetchPdaBalance]);
+
+  // Add this near the other useMemo calculations
+  const achievements = useMemo(() => {
+    return {
+      firstWin: {
+        title: "First Win",
+        description: "Won your first game",
+        icon: "star" as IconName,
+        color: "primary",
+        isUnlocked: stats.wins > 0
+      },
+      highRoller: {
+        title: "High Roller",
+        description: "Bet 100+ SOL in total",
+        icon: "crown" as IconName,
+        color: "secondary",
+        isUnlocked: stats.totalWagered >= 100
+      },
+      luckyStreak: {
+        title: "Lucky Streak",
+        description: "Won 5 games in a row",
+        icon: "chart" as IconName,
+        color: "success",
+        isUnlocked: playerHistory.some((_, index) => 
+          playerHistory.slice(index, index + 5).length === 5 && 
+          playerHistory.slice(index, index + 5).every(game => game.winnings > 0)
+        )
+      },
+      veteran: {
+        title: "Veteran",
+        description: "Played 100+ games",
+        icon: "game" as IconName,
+        color: "error",
+        isUnlocked: stats.totalGames >= 100
+      }
+    };
+  }, [playerHistory, stats]);
+
+  // Replace the achievements section with this updated version
+  const renderAchievements = () => (
+    <div className="bg-base-200 rounded-3xl p-6 space-y-6">
+      <h2 className="text-2xl font-bold">Achievements</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {Object.entries(achievements).map(([key, achievement]) => (
+          <div 
+            key={key}
+            className={`relative bg-base-100 p-4 rounded-xl text-center space-y-2 transition-all duration-300 ${
+              achievement.isUnlocked 
+                ? 'bg-gradient-to-br from-base-100 to-base-200 shadow-lg border border-base-300' 
+                : 'bg-opacity-50'
+            }`}
+          >
+            {achievement.isUnlocked && (
+              <div className="absolute -top-2 -right-2">
+                <div className="badge badge-primary badge-sm">Unlocked</div>
+              </div>
+            )}
+            <div className={`
+              w-16 h-16 mx-auto rounded-full 
+              ${achievement.isUnlocked 
+                ? `bg-gradient-to-br from-${achievement.color} to-${achievement.color}/60 shadow-lg shadow-${achievement.color}/20` 
+                : 'bg-base-200'
+              } 
+              flex items-center justify-center transition-all duration-300
+            `}>
+              <Icon 
+                name={achievement.icon} 
+                className={`text-3xl ${
+                  achievement.isUnlocked 
+                    ? 'text-base-100' 
+                    : 'text-base-content/40'
+                }`} 
+              />
+            </div>
+            <h3 className={`font-bold ${
+              achievement.isUnlocked ? `text-${achievement.color}` : 'text-base-content/60'
+            }`}>
+              {achievement.title}
+            </h3>
+            <p className="text-sm text-base-content/60">{achievement.description}</p>
+            {!achievement.isUnlocked && (
+              <div className="badge badge-ghost badge-sm">Locked</div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   if (!publicKey) {
     return (
@@ -305,40 +394,8 @@ const ProfilePage: React.FC = () => {
         {/* Recent Activity */}
         {renderRecentActivity()}
 
-        {/* Achievements Section */}
-        <div className="bg-base-200 rounded-3xl p-6 space-y-6">
-          <h2 className="text-2xl font-bold">Achievements</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-base-100 p-4 rounded-xl text-center space-y-2">
-              <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center">
-                <Icon name="star" className="text-3xl text-primary" />
-              </div>
-              <h3 className="font-bold">First Win</h3>
-              <p className="text-sm text-base-content/60">Won your first game</p>
-            </div>
-            <div className="bg-base-100 p-4 rounded-xl text-center space-y-2">
-              <div className="w-16 h-16 mx-auto rounded-full bg-secondary/20 flex items-center justify-center">
-                <Icon name="crown" className="text-3xl text-secondary" />
-              </div>
-              <h3 className="font-bold">High Roller</h3>
-              <p className="text-sm text-base-content/60">Bet 100+ SOL in total</p>
-            </div>
-            <div className="bg-base-100 p-4 rounded-xl text-center space-y-2">
-              <div className="w-16 h-16 mx-auto rounded-full bg-success/20 flex items-center justify-center">
-                <Icon name="chart" className="text-3xl text-success" />
-              </div>
-              <h3 className="font-bold">Lucky Streak</h3>
-              <p className="text-sm text-base-content/60">Won 5 games in a row</p>
-            </div>
-            <div className="bg-base-100 p-4 rounded-xl text-center space-y-2">
-              <div className="w-16 h-16 mx-auto rounded-full bg-error/20 flex items-center justify-center">
-                <Icon name="game" className="text-3xl text-error" />
-              </div>
-              <h3 className="font-bold">Veteran</h3>
-              <p className="text-sm text-base-content/60">Played 100+ games</p>
-            </div>
-          </div>
-        </div>
+        {/* Replace the static achievements section with the new dynamic one */}
+        {renderAchievements()}
       </div>
 
       <WalletModal

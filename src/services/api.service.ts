@@ -86,16 +86,16 @@ apiClient.interceptors.response.use(
     console.log("API Response:", {
       url: response.config.url,
       status: response.status,
-      data: response.data
+      data: response.data,
     });
-    return response.data; // Return only the data
+    return response; // Return the full response instead of response.data
   },
   async (error: AxiosError<AuthError>) => {
     console.error("API Error:", {
       url: error.config?.url,
       status: error.response?.status,
       data: error.response?.data,
-      message: error.message
+      message: error.message,
     });
 
     const originalRequest = error.config as RetryableRequest;
@@ -125,12 +125,12 @@ apiClient.interceptors.response.use(
             return apiClient(originalRequest);
           }
         }
-        AuthService.setAuthState('unauthenticated');
+        AuthService.setAuthState("unauthenticated");
         throw new Error("Token refresh failed");
       } catch (refreshError) {
         processQueue(refreshError as Error); // Process queue with error
         AuthService.clearTokens();
-        AuthService.setAuthState('unauthenticated');
+        AuthService.setAuthState("unauthenticated");
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -140,7 +140,7 @@ apiClient.interceptors.response.use(
     // Improve error handling
     if (error.response?.status === 500) {
       toast.error("Server error. Please try again later.");
-    } else if (error.code === 'ECONNABORTED') {
+    } else if (error.code === "ECONNABORTED") {
       toast.error("Request timeout. Please check your connection.");
     } else if (!error.response) {
       toast.error("Network error. Please check your connection.");
@@ -156,8 +156,8 @@ export const createPublicClient = () => {
     baseURL: API_BASE_URL,
     timeout: 15000,
     headers: {
-      'Content-Type': 'application/json'
-    }
+      "Content-Type": "application/json",
+    },
   });
 };
 

@@ -28,7 +28,7 @@ export const AuthService = {
       const response = await apiClient.get<{ nonce: string; message: string }>(
         `/auth/nonce?wallet=${publicKey}`
       );
-      return response;
+      return response.data;
     } catch (err) {
       const error = err as AxiosError<{ error: string }>;
       console.error("Error fetching nonce:", error);
@@ -58,14 +58,15 @@ export const AuthService = {
         }
       );
 
-      if (!response?.token) {
-        throw new Error('No token received from server');
+      if (response.data && response.data.token) {
+        // Store the JWT token
+        this.setTokens(response.data.token, response.data.token);
+        this.setAuthState("authenticated");
+        return true;
       }
 
-      // Store the JWT token
-      this.setTokens(response.token, response.token);
-      this.setAuthState("authenticated");
-      return true;
+      this.setAuthState("unauthenticated");
+      return false;
     } catch (err) {
       this.setAuthState("unauthenticated");
       const error = err as AxiosError<{ error: string }>;
@@ -99,10 +100,10 @@ export const AuthService = {
   },
 
   clearTokens() {
-    Object.values(COOKIE_NAMES).forEach(cookieName => {
-      Cookies.remove(cookieName);
-    });
-    this._authState = "unauthenticated";
+    Cookies.remove(COOKIE_NAMES.ACCESS_TOKEN);
+    Cookies.remove(COOKIE_NAMES.REFRESH_TOKEN);
+    Cookies.remove(COOKIE_NAMES.PDA_ADDRESS);
+    Cookies.remove(COOKIE_NAMES.PDA_BALANCE);
   },
 
   async refreshTokens(): Promise<boolean> {
@@ -118,10 +119,10 @@ export const AuthService = {
         { refreshToken }
       );
 
-      if (response?.accessToken && response.refreshToken) {
-        this.setTokens(response.accessToken, response.refreshToken);
-        return true;
-      }
+      // if (response?.accessToken && response.refreshToken) {
+      //   this.setTokens(response.accessToken, response.refreshToken);
+      //   return true;
+      // }
 
       console.error("Refresh response missing tokens:", response);
       return false;

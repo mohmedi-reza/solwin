@@ -16,14 +16,16 @@ export interface WalletBalanceResponse {
 }
 
 export class UserService {
-  private static readonly BASE_PATH = '/api/user';
+  private static readonly BASE_PATH = "/api/user";
 
   static async getProfile(): Promise<UserProfile> {
     try {
-      const response = await apiClient.get(`${this.BASE_PATH}/profile`);
+      const response = await apiClient.get<UserProfile>(
+        `${this.BASE_PATH}/profile`
+      );
       return response.data;
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error("Error fetching user profile:", error);
       throw error;
     }
   }
@@ -32,7 +34,10 @@ export class UserService {
     updates: Partial<UserProfile>
   ): Promise<UserProfile> {
     try {
-      const response = await apiClient.patch("/auth/profile", updates);
+      const response = await apiClient.patch<UserProfile>(
+        "/auth/profile",
+        updates
+      );
       return response.data;
     } catch (error) {
       console.error("Error updating user profile:", error);
@@ -45,10 +50,10 @@ export class UserService {
       const response = await apiClient.get<WalletBalanceResponse>(
         "/wallet/balance"
       );
-      if (!response.success) {
-        throw new Error(response.error || "Failed to fetch wallet balance");
+      if (!response.data) {
+        throw new Error("Failed to fetch wallet balance");
       }
-      return response;
+      return response.data;
     } catch (error) {
       console.error("Error fetching wallet balance:", error);
       throw error;

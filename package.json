@@ -24,6 +24,7 @@
     "@types/js-cookie": "^3.0.6",
     "axios": "^1.7.9",
     "bs58": "^6.0.0",
+    "date-fns": "^4.1.0",
     "firebase": "^11.3.1",
     "js-cookie": "^3.0.5",
     "promise-retry": "^2.0.1",

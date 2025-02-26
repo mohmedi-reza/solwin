@@ -14,7 +14,7 @@ export class GameService {
         amount,
         risk,
       });
-      return response;
+      return response.data;
     } catch (error) {
       console.error("Error creating new game:", error);
       throw error;
