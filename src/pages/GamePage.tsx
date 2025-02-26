@@ -689,8 +689,8 @@ const GamePage: React.FC = () => {
                   {handResult.multiplier > 0 ? (
                     <div className="space-y-4">
                       <div className="flex-col md:flex-row items-center justify-center gap-3">
-                        <span className='text-4xl'>🤩</span>
-                        <div className="stats bg-base-100/50 backdrop-blur-sm shadow inline-flex">
+                        <p className='text-4xl'>🤩</p>
+                        <div className="stats bg-base-100/50 backdrop-blur-sm shadow inline-flex mt-5">
                           <div className="stat px-6">
                             <div className="stat-title">Bet Amount</div>
                             <div className="stat-value text-base">{bet.toFixed(3)} SOL</div>
@@ -719,9 +719,9 @@ const GamePage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <div className="flex items-center justify-center gap-3">
-                        <span className='text-4xl'>😥</span>
-                        <div className="stats bg-base-100/50 backdrop-blur-sm shadow inline-flex">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <p className='text-4xl'>😥</p>
+                        <div className="stats bg-base-100/50 backdrop-blur-sm shadow inline-flex mt-5">
                           <div className="stat px-6">
                             <div className="stat-title">Bet Amount</div>
                             <div className="stat-value text-error text-base">
