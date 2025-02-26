@@ -6,8 +6,8 @@ import bs58 from 'bs58';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useWalletBalance } from '../../hooks/useWalletBalance';
 import { AuthService, AuthState } from '../../services/auth.service';
-import { UserService, WalletBalanceResponse } from '../../services/user.service';
 import AddressShort from '../AddressShort';
 import Icon from '../icon/icon.component';
 import { IconName } from '../icon/iconPack';
@@ -25,23 +25,7 @@ const Toolbar: React.FC = () => {
     const [balance, setBalance] = useState<string | null>(null);
     const [authLoading, setAuthLoading] = useState(false);
     const [authState, setAuthState] = useState<AuthState>('unauthenticated');
-    const [walletBalance, setWalletBalance] = useState<WalletBalanceResponse | null>(null);
-    const [isBalanceLoading, setIsBalanceLoading] = useState(false);
-
-    const fetchWalletBalance = useCallback(async () => {
-        if (!AuthService.isAuthenticated() || !wallet) return;
-
-        setIsBalanceLoading(true);
-        try {
-            // Cache invalid or empty, fetch fresh balance
-            const balance = await UserService.getWalletBalance();
-            setWalletBalance(balance);
-        } catch (error) {
-            console.error('Error fetching wallet balance:', error);
-        } finally {
-            setIsBalanceLoading(false);
-        }
-    }, [wallet]);
+    const { data: walletData, isLoading: isWalletDataLoading } = useWalletBalance();
 
     const handleLogin = useCallback(async () => {
         if (!publicKey || !signMessage || authState === 'authenticating') return;
@@ -72,7 +56,6 @@ const Toolbar: React.FC = () => {
             if (success) {
                 setAuthState('authenticated');
                 toast.success('Successfully authenticated!');
-                await fetchWalletBalance();
             } else {
                 throw new Error('Authentication failed');
             }
@@ -87,7 +70,7 @@ const Toolbar: React.FC = () => {
         } finally {
             setAuthLoading(false);
         }
-    }, [publicKey, signMessage, authState, fetchWalletBalance]);
+    }, [publicKey, signMessage, authState]);
 
     useEffect(() => {
         let isMounted = true;
@@ -137,13 +120,6 @@ const Toolbar: React.FC = () => {
         }
     }, [wallet, publicKey, authLoading, authState, handleLogin]);
 
-    useEffect(() => {
-        // Initial fetch
-        fetchWalletBalance();
-
-        // Subscribe to balance updates
-    }, [fetchWalletBalance]);
-
     const handleDisconnect = useCallback(async () => {
         // First logout from backend
         await AuthService.logout();
@@ -155,7 +131,6 @@ const Toolbar: React.FC = () => {
         // Reset states
         setAuthState('unauthenticated');
         setBalance(null);
-        setWalletBalance(null);
     }, [disconnect]);
 
     const copyAddress = useCallback(() => {
@@ -174,19 +149,21 @@ const Toolbar: React.FC = () => {
     };
 
     const getBalanceDisplay = () => {
-        if (selectedBalance === 'pda' && walletBalance?.balance !== undefined) {
+        if (selectedBalance === 'pda') {
             return {
                 icon: "wallet",
                 iconClass: "text-success",
-                value: walletBalance.balance,
-                label: "Game Balance"
+                value: walletData?.balance || 0,
+                label: "Game Balance",
+                isLoading: isWalletDataLoading
             };
         }
         return {
             icon: "coin",
             iconClass: "text-primary",
-            value: balance,
-            label: "Wallet Balance"
+            value: (Number(balance) / LAMPORTS_PER_SOL) || 0,
+            label: "Wallet Balance",
+            isLoading: false
         };
     };
 
@@ -226,17 +203,17 @@ const Toolbar: React.FC = () => {
                         {/* Actions - Responsive */}
                         <div className="flex items-center gap-2 sm:gap-4">
                             {/* Balance Dropdown */}
-                            {(balance !== null || walletBalance?.balance !== null) && (
+                            {(balance !== null || walletData?.balance !== null) && (
                                 <div className="dropdown dropdown-end">
                                     <div tabIndex={0} role="button" className="bg-base-200 flex gap-1 sm:flex items-center text-base-content/70 hover:text-base-content cursor-pointer p-2 rounded-lg hover:bg-base-200">
                                         <Icon name={getBalanceDisplay().icon as IconName} className={`${getBalanceDisplay().iconClass} text-lg`} />
-                                        {isBalanceLoading ? (
+                                        {getBalanceDisplay().isLoading ? (
                                             <span className="loading loading-spinner loading-sm"></span>
                                         ) : (
                                             <p className='flex gap-2'>
                                                 <span>
                                                     {selectedBalance === 'pda'
-                                                        ? Number(walletBalance?.balance ?? '0').toFixed(4)
+                                                        ? (walletData?.balance || 0).toFixed(4)
                                                         : (Number(balance) / LAMPORTS_PER_SOL).toFixed(4)}
                                                 </span>
                                                 <span>SOL</span>
@@ -248,35 +225,30 @@ const Toolbar: React.FC = () => {
                                         <li className="menu-title">
                                             <span>Select Balance</span>
                                         </li>
-                                        {walletBalance?.balance !== undefined && (
-                                            <li>
-                                                <button
-                                                    onClick={() => setSelectedBalance('pda')}
-                                                    className={selectedBalance === 'pda' ? 'active' : ''}
-                                                >
-                                                    <Icon name="wallet" className="text-success" />
-                                                    <span className='text-nowrap'>Game Balance:</span>
-                                                    <p className="ml-auto flex gap-2">
-                                                        <span>{Number(walletBalance.balance).toFixed(4)}</span>
-                                                        <span>SOL</span>
-                                                    </p>
-                                                </button>
-                                            </li>
-                                        )}
-                                        {balance !== null && (
-                                            <li>
-                                                <button
-                                                    onClick={() => setSelectedBalance('wallet')}
-                                                    className={selectedBalance === 'wallet' ? 'active' : ''}
-                                                >
-                                                    <Icon name="coin" className="text-primary" />
-                                                    <span className='text-nowrap'>Wallet Balance:</span>
-                                                    <span className="ml-auto">
-                                                        {(Number(balance) / LAMPORTS_PER_SOL).toFixed(4)} SOL
-                                                    </span>
-                                                </button>
-                                            </li>
-                                        )}
+                                        <li>
+                                            <button
+                                                onClick={() => setSelectedBalance('pda')}
+                                                className={selectedBalance === 'pda' ? 'active' : ''}
+                                            >
+                                                <Icon name="wallet" className="text-success" />
+                                                <span className='text-nowrap'>Game Balance:</span>
+                                                <span className="ml-auto">
+                                                    {(walletData?.balance || 0).toFixed(4)} SOL
+                                                </span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button
+                                                onClick={() => setSelectedBalance('wallet')}
+                                                className={selectedBalance === 'wallet' ? 'active' : ''}
+                                            >
+                                                <Icon name="coin" className="text-primary" />
+                                                <span className='text-nowrap'>Wallet Balance:</span>
+                                                <span className="ml-auto">
+                                                    {(Number(balance) / LAMPORTS_PER_SOL).toFixed(4)} SOL
+                                                </span>
+                                            </button>
+                                        </li>
                                     </ul>
                                 </div>
                             )}

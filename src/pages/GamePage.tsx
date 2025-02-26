@@ -1,17 +1,17 @@
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useWallet } from '@solana/wallet-adapter-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import BettingModal from '../components/BettingModal';
 import Icon from '../components/icon/icon.component';
 import WalletModal from '../components/WalletModal';
+import { useLeaderboard } from '../hooks/useLeaderboard';
+import { useWalletBalance } from '../hooks/useWalletBalance';
 import { AuthService } from '../services/auth.service';
-import { UserService } from '../services/user.service';
-import { Card, HandResult } from '../types/poker.interface';
 import { GameService } from '../services/game.service';
-import { toast } from 'react-toastify';
-import { LeaderboardService } from '../services/leaderboard.service';
-import { LeaderboardEntry } from '../types/leaderboard.interface';
+import { Card, HandResult } from '../types/poker.interface';
+import { useQueryClient } from '@tanstack/react-query';
+import { QUERY_KEYS } from '../hooks/useWalletBalance';
 
 interface ShufflingCard extends Card {
   key: number;
@@ -19,8 +19,7 @@ interface ShufflingCard extends Card {
 
 const GamePage: React.FC = () => {
   const navigate = useNavigate();
-  const { publicKey, wallet } = useWallet();
-  const { connection } = useConnection();
+  const { publicKey } = useWallet();
   const [showBettingModal, setShowBettingModal] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentHand, setCurrentHand] = useState<Card[]>([]);
@@ -28,64 +27,18 @@ const GamePage: React.FC = () => {
   const [bet, setBet] = useState(10);
   const [risk, setRisk] = useState(1.0);
   const [shufflingCards, setShufflingCards] = useState<ShufflingCard[]>([]);
-  const [recentWinners, setRecentWinners] = useState<LeaderboardEntry[]>([]);
-  const [isRulesOpen, setIsRulesOpen] = useState(true);
-  const [walletBalance, setWalletBalance] = useState<number | null>(null);
-  const [pdaBalance, setPdaBalance] = useState<number>(0);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [isRulesOpen, setIsRulesOpen] = useState(true);
 
   const rulesRef = useRef<HTMLDivElement>(null);
+
+  const { data: walletData } = useWalletBalance();
+  const { data: leaderboard = [] } = useLeaderboard();
+  const queryClient = useQueryClient();
 
   const scrollToRules = () => {
     rulesRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  const fetchBalance = useCallback(async () => {
-    if (publicKey && AuthService.isAuthenticated()) {
-      try {
-        const PdaBalace = await UserService.getWalletBalance();
-        setPdaBalance(Number(PdaBalace.balance));
-      } catch (error) {
-        console.error('Error fetching balance:', error);
-      }
-    }
-  }, [publicKey]);
-
-  useEffect(() => {
-    if (publicKey && AuthService.isAuthenticated()) {
-      fetchBalance();
-    }
-  }, [publicKey, fetchBalance]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const getBalance = async () => {
-      if (!publicKey || !wallet) return;
-      try {
-        const balance = await connection.getBalance(publicKey);
-        if (isMounted) setWalletBalance(balance / LAMPORTS_PER_SOL);
-      } catch (error) {
-        console.error('Error fetching balance:', error);
-      }
-    };
-
-    if (publicKey && wallet) {
-      getBalance();
-      const id = connection.onAccountChange(publicKey, () => {
-        getBalance();
-      });
-
-      return () => {
-        isMounted = false;
-        connection.removeAccountChangeListener(id);
-      };
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [connection, publicKey, wallet]);
 
   useEffect(() => {
     if (isDrawing) {
@@ -126,17 +79,15 @@ const GamePage: React.FC = () => {
   const handleWalletSuccess = useCallback(async () => {
     if (publicKey && AuthService.isAuthenticated()) {
       try {
-        await fetchBalance();
-        const solBalance = await connection.getBalance(publicKey);
-        setWalletBalance(solBalance / LAMPORTS_PER_SOL);
+        // No need to fetch balance here, as it's handled by useWalletBalance
       } catch (error) {
         console.error('Error refreshing balances:', error);
       }
     }
-  }, [publicKey, connection, fetchBalance]);
+  }, [publicKey]);
 
   const handleStartGame = () => {
-    if (!pdaBalance || pdaBalance < 0.1) {
+    if (!walletData?.balance || walletData.balance < 0.1) {
       setShowWalletModal(true);
       return;
     }
@@ -157,7 +108,23 @@ const GamePage: React.FC = () => {
         setIsDrawing(false);
         setCurrentHand(gameResult.hand);
         setHandResult(gameResult.result);
-        await fetchBalance();
+
+        queryClient.invalidateQueries({ 
+          queryKey: [QUERY_KEYS.WALLET_BALANCE],
+          refetchType: 'all'
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: [QUERY_KEYS.GAME_HISTORY],
+          refetchType: 'all'
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: [QUERY_KEYS.USER_PROFILE],
+          refetchType: 'all'
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: [QUERY_KEYS.LEADERBOARD],
+          refetchType: 'all'
+        });
       }, 5000);
 
     } catch (error) {
@@ -165,7 +132,7 @@ const GamePage: React.FC = () => {
       setIsDrawing(false);
       toast.error('Failed to play game. Please try again.');
     }
-  }, [fetchBalance]);
+  }, [queryClient]);
 
   const handleBack = useCallback(() => {
     setCurrentHand([]);
@@ -177,15 +144,6 @@ const GamePage: React.FC = () => {
   const goToHomePage = () => {
     navigate('/');
   };
-
-  useEffect(() => {
-    const fetchRecentWins = async () => {
-      const wins = await LeaderboardService.getRecentWins(3);
-      setRecentWinners(wins);
-    };
-
-    fetchRecentWins();
-  }, []);
 
   const getRankBadge = (index: number) => {
     switch (index) {
@@ -238,7 +196,7 @@ const GamePage: React.FC = () => {
                     onClick={handleStartGame}
                     className="relative text-nowrap btn btn-primary btn-lg text-xl px-4 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
                   >
-                    {!pdaBalance || pdaBalance < 0.1 ? (
+                    {!walletData?.balance || walletData.balance < 0.1 ? (
                       <>
                         <Icon name="wallet" className="text-3xl" />
                         Deposit to Start Playing
@@ -300,7 +258,7 @@ const GamePage: React.FC = () => {
               <div className="stat-title">Your Balance</div>
               {publicKey ? (
                 <>
-                  <div className="stat-value text-primary">{pdaBalance || '0'} SOL</div>
+                  <div className="stat-value text-primary">{(walletData?.balance || 0).toFixed(4)} SOL</div>
                   <div className="stat-desc">Ready to bet</div>
                 </>
               ) : (
@@ -411,12 +369,12 @@ const GamePage: React.FC = () => {
               Recent Big Wins
             </h3>
             <div className="space-y-3">
-              {recentWinners.map((winner, index) => (
+              {leaderboard.map((winner, index) => (
                 <div key={index} className="flex items-center justify-between p-2 bg-base-100 rounded-lg animate-slideRight" style={{ animationDelay: `${index * 0.1}s` }}>
                   <div className="flex items-center gap-2">
                     <div className="avatar placeholder ">
                       <div className="bg-primary flex items-center justify-center  text-white rounded-full p-2">
-                        <Icon className='text-xl' name="userTick"/>
+                        <Icon className='text-xl' name="userTick" />
                       </div>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -800,7 +758,7 @@ const GamePage: React.FC = () => {
                   </div>
                   <div className="stat-title text-xs sm:text-sm">Game Balance</div>
                   <div className="stat-value text-primary text-lg sm:text-2xl whitespace-nowrap">
-                    {pdaBalance.toFixed(5)} SOL
+                    {(walletData?.balance || 0).toFixed(5)} SOL
                   </div>
                   <div className="stat-desc text-xs">Updated just now</div>
                 </div>
@@ -823,7 +781,7 @@ const GamePage: React.FC = () => {
         <WalletModal
           isOpen={showWalletModal}
           onClose={() => setShowWalletModal(false)}
-          walletBalance={walletBalance || 0}
+          walletBalance={walletData?.balance || 0}
           onSuccess={handleWalletSuccess}
         />
 

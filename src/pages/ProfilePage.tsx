@@ -4,11 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import AddressShort from '../components/AddressShort';
 import Icon from '../components/icon/icon.component';
 import WalletModal from '../components/WalletModal';
-import { LeaderboardService } from '../services/leaderboard.service';
-import { PlayerHistory } from '../types/user.interface';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { UserService } from '../services/user.service';
 import { IconName } from '../components/icon/iconPack';
+import { useWalletBalance } from '../hooks/useWalletBalance';
+import { usePlayerHistory } from '../hooks/usePlayerHistory';
 
 const getRelativeTime = (timestamp: string) => {
   const now = new Date();
@@ -32,23 +31,9 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const [playerHistory, setPlayerHistory] = useState<PlayerHistory[]>([]);
+  const { data: playerHistory = [] } = usePlayerHistory(100);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
-  const [pdaBalance, setPdaBalance] = useState<number>(0);
-
-  const fetchPlayerHistory = useCallback(async () => {
-    if (!publicKey) return;
-    try {
-      const history = await LeaderboardService.getPlayerHistory(100); // Get more history for stats
-      setPlayerHistory(history);
-    } catch (error) {
-      console.error('Error fetching player history:', error);
-    }
-  }, [publicKey]);
-
-  useEffect(() => {
-    fetchPlayerHistory();
-  }, [fetchPlayerHistory]);
+  const { data: walletData } = useWalletBalance();
 
   // Generate stats from player history
   const stats = useMemo(() => {
@@ -84,12 +69,6 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  // Replace the direct access with a helper function
-  // const getLatestHistory = () => {
-  //   if (!playerHistory.length) return null;
-  //   return playerHistory[playerHistory.length - 1];
-  // };
-
   // Add this useEffect for wallet balance
   useEffect(() => {
     let isMounted = true;
@@ -116,21 +95,6 @@ const ProfilePage: React.FC = () => {
     }
   }, [connection, publicKey]);
 
-  // Add this for PDA balance
-  const fetchPdaBalance = useCallback(async () => {
-    if (!publicKey) return;
-    try {
-      const balance = await UserService.getWalletBalance();
-      setPdaBalance(Number(balance.balance));
-    } catch (error) {
-      console.error('Error fetching PDA balance:', error);
-    }
-  }, [publicKey]);
-
-  useEffect(() => {
-    fetchPdaBalance();
-  }, [fetchPdaBalance]);
-
   // Add this near the other useMemo calculations
   const achievements = useMemo(() => {
     return {
@@ -153,8 +117,8 @@ const ProfilePage: React.FC = () => {
         description: "Won 5 games in a row",
         icon: "chart" as IconName,
         color: "success",
-        isUnlocked: playerHistory.some((_, index) => 
-          playerHistory.slice(index, index + 5).length === 5 && 
+        isUnlocked: playerHistory.some((_, index) =>
+          playerHistory.slice(index, index + 5).length === 5 &&
           playerHistory.slice(index, index + 5).every(game => game.winnings > 0)
         )
       },
@@ -174,13 +138,12 @@ const ProfilePage: React.FC = () => {
       <h2 className="text-2xl font-bold">Achievements</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {Object.entries(achievements).map(([key, achievement]) => (
-          <div 
+          <div
             key={key}
-            className={`relative bg-base-100 p-4 rounded-xl text-center space-y-2 transition-all duration-300 ${
-              achievement.isUnlocked 
-                ? 'bg-gradient-to-br from-base-100 to-base-200 shadow-lg border border-base-300' 
+            className={`relative bg-base-100 p-4 rounded-xl text-center space-y-2 transition-all duration-300 ${achievement.isUnlocked
+                ? 'bg-gradient-to-br from-base-100 to-base-200 shadow-lg border border-base-300'
                 : 'bg-opacity-50'
-            }`}
+              }`}
           >
             {achievement.isUnlocked && (
               <div className="absolute -top-2 -right-2">
@@ -189,24 +152,22 @@ const ProfilePage: React.FC = () => {
             )}
             <div className={`
               w-16 h-16 mx-auto rounded-full 
-              ${achievement.isUnlocked 
-                ? `bg-gradient-to-br from-${achievement.color} to-${achievement.color}/60 shadow-lg shadow-${achievement.color}/20` 
+              ${achievement.isUnlocked
+                ? `bg-gradient-to-br from-${achievement.color} to-${achievement.color}/60 shadow-lg shadow-${achievement.color}/20`
                 : 'bg-base-200'
               } 
               flex items-center justify-center transition-all duration-300
             `}>
-              <Icon 
-                name={achievement.icon} 
-                className={`text-3xl ${
-                  achievement.isUnlocked 
-                    ? 'text-base-100' 
+              <Icon
+                name={achievement.icon}
+                className={`text-3xl ${achievement.isUnlocked
+                    ? 'text-base-100'
                     : 'text-base-content/40'
-                }`} 
+                  }`}
               />
             </div>
-            <h3 className={`font-bold ${
-              achievement.isUnlocked ? `text-${achievement.color}` : 'text-base-content/60'
-            }`}>
+            <h3 className={`font-bold ${achievement.isUnlocked ? `text-${achievement.color}` : 'text-base-content/60'
+              }`}>
               {achievement.title}
             </h3>
             <p className="text-sm text-base-content/60">{achievement.description}</p>
@@ -352,7 +313,7 @@ const ProfilePage: React.FC = () => {
             </div>
             <div className="stat-title">PDA Balance</div>
             <div className="stat-value text-success">
-              {pdaBalance.toFixed(4)} SOL
+              {(walletData?.balance || 0).toFixed(4)} SOL
             </div>
             <div className="stat-desc">Your game balance</div>
             <button

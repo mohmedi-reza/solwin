@@ -5,6 +5,9 @@ import { toast } from 'react-toastify';
 import { UserService } from '../services/user.service';
 import useGameWeb3 from '../web3/slots';
 import Icon from './icon/icon.component';
+import { useQueryClient } from '@tanstack/react-query';
+import { QUERY_KEYS } from '../hooks/useWalletBalance';
+
 interface WalletModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -38,6 +41,7 @@ const WalletModal: React.FC<WalletModalProps> = ({
   const [isLoadingPda, setIsLoadingPda] = useState(true);
   const [pdaBalance, setPdaBalance] = useState('0');
   const { SendSol, withdrawFromUserPDA } = useGameWeb3();
+  const queryClient = useQueryClient();
 
   const STEP_SIZE = 0.1;
   const MIN_DEPOSIT = 0.1;
@@ -124,15 +128,8 @@ const WalletModal: React.FC<WalletModalProps> = ({
 
   const handleDeposit = async () => {
     const amount = parseFloat(inputValue);
-    // Validate minimum amount
     if (!amount || amount < 0.1) {
       toast.error('Minimum deposit amount is 0.1 SOL');
-      return;
-    }
-
-    // Validate wallet balance
-    if (amount > walletBalance) {
-      toast.error(`Insufficient wallet balance. Maximum available: ${walletBalance.toFixed(4)} SOL`);
       return;
     }
 
@@ -140,15 +137,18 @@ const WalletModal: React.FC<WalletModalProps> = ({
     try {
       const success = await SendSol(amount);
       if (success) {
-        // Show success message and close
+        // Invalidate all relevant queries
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WALLET_BALANCE] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_PROFILE] });
+        
         toast.success(`Successfully deposited ${amount.toFixed(4)} SOL`);
         setInputValue('');
         onClose();
         onSuccess();
       }
-    } catch (error: unknown) {
-      const apiError = error as ApiError;
-      toast.error(apiError.response?.data?.error || 'Deposit failed. Please try again.');
+    } catch (error) {
+      const err = error as Error;
+      toast.error(`Deposit failed: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -156,13 +156,11 @@ const WalletModal: React.FC<WalletModalProps> = ({
 
   const handleWithdraw = async () => {
     const amount = parseFloat(inputValue);
-    // Validate amount
     if (!amount || amount <= 0) {
       toast.error('Please enter a valid amount');
       return;
     }
 
-    // Validate game balance
     if (amount > Number(pdaBalance)) {
       toast.error(`Insufficient game balance. Maximum available: ${Number(pdaBalance).toFixed(4)} SOL`);
       return;
@@ -172,8 +170,10 @@ const WalletModal: React.FC<WalletModalProps> = ({
     try {
       const success = await withdrawFromUserPDA(amount);
       if (success) {
+        // Invalidate all relevant queries
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WALLET_BALANCE] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_PROFILE] });
 
-        // Show success message and close
         toast.success(`Successfully withdrew ${amount.toFixed(4)} SOL`);
         setInputValue('');
         onClose();
