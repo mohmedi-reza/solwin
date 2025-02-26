@@ -1,6 +1,5 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { UserService } from '../services/user.service';
@@ -32,7 +31,7 @@ const WalletModal: React.FC<WalletModalProps> = ({
   const { publicKey } = useWallet();
   const { setVisible } = useWalletModal();
   const [activeTab, setActiveTab] = useState<TabType>('deposit');
-  const [amount, setAmount] = useState<number>(0);
+  const [inputValue, setInputValue] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isValid, setIsValid] = useState(false);
@@ -40,47 +39,65 @@ const WalletModal: React.FC<WalletModalProps> = ({
   const [pdaBalance, setPdaBalance] = useState('0');
   const { SendSol, withdrawFromUserPDA } = useGameWeb3();
 
+  const STEP_SIZE = 0.1;
+  const MIN_DEPOSIT = 0.1;
+
   const handleConnectWallet = () => {
     setVisible(true); // Open Solana wallet modal
     onClose(); // Close current modal
   };
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newAmount = Number(e.target.value);
+  const handleIncrement = () => {
+    const currentValue = parseFloat(inputValue) || 0;
+    // Round to 4 decimal places to avoid floating point precision issues
+    const newValue = Math.round((currentValue + STEP_SIZE) * 10000) / 10000;
+    const maxValue = activeTab === 'deposit' ? walletBalance : Number(pdaBalance);
+
+    if (newValue <= maxValue) {
+      setInputValue(newValue.toFixed(4));
+      validateAmount(newValue.toString());
+    }
+  };
+
+  const handleDecrement = () => {
+    const currentValue = parseFloat(inputValue) || 0;
+    // Round to 4 decimal places to avoid floating point precision issues
+    const newValue = Math.round(Math.max(currentValue - STEP_SIZE, 0) * 10000) / 10000;
+
+    if (newValue >= 0) {
+      setInputValue(newValue.toFixed(4));
+      validateAmount(newValue.toString());
+    }
+  };
+
+  const validateAmount = (value: string) => {
+    setInputValue(value);
     setError(null);
     setIsValid(false);
 
-    // Handle empty or invalid input
-    if (!e.target.value || isNaN(newAmount)) {
-      setAmount(0);
+    if (value === '') {
       setError('Please enter a valid amount');
       return;
     }
 
-    // Don't allow negative values
-    if (newAmount < 0) {
-      setAmount(0);
-      setError('Amount cannot be negative');
+    const numericValue = parseFloat(value);
+    if (isNaN(numericValue)) {
+      setError('Please enter a valid amount');
       return;
     }
 
-    setAmount(newAmount);
-
-    // Handle deposit validation
     if (activeTab === 'deposit') {
-      if (newAmount < 0.1) {
+      if (numericValue < MIN_DEPOSIT) {
         setError('Minimum deposit is 0.1 SOL');
-      } else if (newAmount > walletBalance) {
+      } else if (numericValue > walletBalance) {
         setError(`Insufficient balance (max: ${walletBalance.toFixed(4)} SOL)`);
       } else {
         setIsValid(true);
       }
-    }
-    // Handle withdraw validation
-    else {
-      if (newAmount <= 0) {
+    } else {
+      if (numericValue <= 0) {
         setError('Amount must be greater than 0');
-      } else if (newAmount > Number(pdaBalance)) {
+      } else if (numericValue > Number(pdaBalance)) {
         setError(`Insufficient game balance (max: ${Number(pdaBalance).toFixed(4)} SOL)`);
       } else {
         setIsValid(true);
@@ -88,30 +105,25 @@ const WalletModal: React.FC<WalletModalProps> = ({
     }
   };
 
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    // Allow empty input, numbers, and one decimal point
+    if (!/^$|^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+
+    validateAmount(value);
+  };
+
   const handleMaxAmount = () => {
     const maxAmount = activeTab === 'deposit' ? walletBalance : Number(pdaBalance);
-    setAmount(maxAmount);
-    setError(null);
-
-    // Validate the max amount
-    if (activeTab === 'deposit') {
-      if (maxAmount < 0.1) {
-        setError('Insufficient balance for minimum deposit (0.1 SOL)');
-        setIsValid(false);
-      } else {
-        setIsValid(true);
-      }
-    } else {
-      if (maxAmount <= 0) {
-        setError('No balance available to withdraw');
-        setIsValid(false);
-      } else {
-        setIsValid(true);
-      }
-    }
+    setInputValue(maxAmount.toFixed(4));
+    validateAmount(maxAmount.toString());
   };
 
   const handleDeposit = async () => {
+    const amount = parseFloat(inputValue);
     // Validate minimum amount
     if (!amount || amount < 0.1) {
       toast.error('Minimum deposit amount is 0.1 SOL');
@@ -130,7 +142,7 @@ const WalletModal: React.FC<WalletModalProps> = ({
       if (success) {
         // Show success message and close
         toast.success(`Successfully deposited ${amount.toFixed(4)} SOL`);
-        setAmount(0);
+        setInputValue('');
         onClose();
         onSuccess();
       }
@@ -143,6 +155,7 @@ const WalletModal: React.FC<WalletModalProps> = ({
   };
 
   const handleWithdraw = async () => {
+    const amount = parseFloat(inputValue);
     // Validate amount
     if (!amount || amount <= 0) {
       toast.error('Please enter a valid amount');
@@ -162,7 +175,7 @@ const WalletModal: React.FC<WalletModalProps> = ({
 
         // Show success message and close
         toast.success(`Successfully withdrew ${amount.toFixed(4)} SOL`);
-        setAmount(0);
+        setInputValue('');
         onClose();
         onSuccess();
       }
@@ -303,20 +316,32 @@ const WalletModal: React.FC<WalletModalProps> = ({
             </span>
           </label>
           <div className="join w-full shadow-lg hover:shadow-xl transition-all duration-200">
+            <button
+              onClick={handleDecrement}
+              className="btn join-item px-4"
+              disabled={!inputValue || parseFloat(inputValue) <= 0}
+            >
+              <Icon name="minus" className="text-xl" />
+            </button>
             <input
-              type="number"
-              value={amount || ''}
+              type="text"
+              value={inputValue}
               onChange={handleAmountChange}
-              className={`input input-bordered join-item w-full focus:outline-none text-lg
+              className={`input input-bordered join-item w-full focus:outline-none text-lg text-center
                 ${error ? 'input-error border-error/50 bg-error/5' : isValid ? 'input-success border-success/50 bg-success/5' : ''}
                 ${isValid ? 'focus:border-success' : error ? 'focus:border-error' : 'focus:border-primary'}
                 transition-all duration-200
               `}
               placeholder={`Enter amount ${activeTab === 'deposit' ? '(min 0.1 SOL)' : ''}`}
-              step={1 / LAMPORTS_PER_SOL}
-              min={activeTab === 'deposit' ? 0.1 : 0}
-              max={activeTab === 'deposit' ? walletBalance : Number(pdaBalance)}
+              inputMode="decimal"
             />
+            <button
+              onClick={handleIncrement}
+              className="btn join-item px-4"
+              disabled={!isValid}
+            >
+              <Icon name="add" className="text-xl" />
+            </button>
             <button
               className={`btn join-item px-6 font-bold
                 ${isValid ? 'btn-success text-success-content' : error ? 'btn-error text-error-content' : 'btn-primary text-primary-content'}
@@ -337,8 +362,8 @@ const WalletModal: React.FC<WalletModalProps> = ({
               className={`text-lg ${isValid && !error ? 'animate-bounce' : ''}`}
             />
             <span className="font-medium">
-              {error ? error : isValid && amount > 0 && (
-                <>Ready to {activeTab} <span className="font-bold">{amount.toFixed(4)} SOL</span></>
+              {error ? error : isValid && inputValue > '0' && (
+                <>Ready to {activeTab} <span className="font-bold">{inputValue} SOL</span></>
               )}
             </span>
           </div>
@@ -358,9 +383,9 @@ const WalletModal: React.FC<WalletModalProps> = ({
           disabled={
             isLoading ||
             !isValid ||
-            amount <= 0 ||
-            (activeTab === 'deposit' && (amount < 0.1 || amount > walletBalance)) ||
-            (activeTab === 'withdraw' && amount > Number(pdaBalance))
+            inputValue === '' ||
+            (activeTab === 'deposit' && (parseFloat(inputValue) < 0.1 || parseFloat(inputValue) > walletBalance)) ||
+            (activeTab === 'withdraw' && parseFloat(inputValue) > Number(pdaBalance))
           }
         >
           {isLoading ? (
