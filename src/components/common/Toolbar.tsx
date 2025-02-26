@@ -197,10 +197,10 @@ const Toolbar: React.FC = () => {
                 <div className="container mx-auto px-4 h-16">
                     <div className="flex items-center justify-between h-full">
                         {/* Logo */}
-                        <div className="flex items-center gap-2">
-                            <Icon name="game" className="text-2xl text-primary" />
-                            <span className="font-bold text-xl">SolWin</span>
-                        </div>
+                        <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                            <Icon name="solana" className="text-4xl text-primary" />
+                            <span className="font-bold text-xl p">SolWin</span>
+                        </Link>
 
                         {/* Navigation - Hide on mobile */}
                         <nav className="hidden md:flex items-center gap-6">
