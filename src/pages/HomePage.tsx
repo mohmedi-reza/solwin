@@ -148,7 +148,7 @@ const HomePage: React.FC = () => {
               <div className="space-y-2 sm:space-y-3 lg:space-y-4 max-w-xl text-center sm:text-left">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold drop-shadow-sm">
                   <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-gradient">
-                    RocketBet
+                    SolWin
                   </span>
                   <span className="text-base-content/80 text-lg ml-3 font-normal">
                     Instant Poker Games

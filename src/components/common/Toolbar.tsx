@@ -199,7 +199,7 @@ const Toolbar: React.FC = () => {
                         {/* Logo */}
                         <div className="flex items-center gap-2">
                             <Icon name="game" className="text-2xl text-primary" />
-                            <span className="font-bold text-xl">RocketBet</span>
+                            <span className="font-bold text-xl">SolWin</span>
                         </div>
 
                         {/* Navigation - Hide on mobile */}
