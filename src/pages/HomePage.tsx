@@ -233,10 +233,11 @@ const HomePage: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10 mix-blend-overlay"></div>
 
                   {/* Dynamic accent overlay based on status */}
-                  <div className={`absolute inset-0 ${card.status === "Active" ? "bg-success/5" :
+                  <div className={`absolute inset-0 ${
+                    card.status === "Active" ? "bg-success/5" :
                     card.status === "Trend" ? "bg-secondary/5" :
-                      "bg-accent/5"
-                    } mix-blend-overlay`}></div>
+                    "bg-accent/5"
+                  } mix-blend-overlay`}></div>
 
                   <img
                     src={card.image}
@@ -253,11 +254,7 @@ const HomePage: React.FC = () => {
                       </span>
                     </div>
                   ) : (
-                    <div className="absolute inset-0 z-20 flex items-center justify-center">
-                      <div className="bg-accent/20 backdrop-blur-sm px-4 py-2 rounded-lg shadow-xl border border-base-content/10">
-                        <span className="text-sm text-base-content">Under Development</span>
-                      </div>
-                    </div>
+                    <div className="absolute inset-0 bg-base-100/50 backdrop-blur-[2px] z-10"></div>
                   )}
                 </div>
 
@@ -267,10 +264,11 @@ const HomePage: React.FC = () => {
                     {/* Title and status */}
                     <div className="flex justify-between items-start gap-2">
                       <h3 className="text-lg sm:text-xl font-bold">{card.title}</h3>
-                      <span className={`badge ${card.status === "Active" ? "badge-success" :
-                        card.status === "Trend" ? "badge-secondary" :
-                          "badge-accent"
-                        }`}>
+                      <span className={`badge ${
+                        card.status === "Active" 
+                          ? "badge-success" 
+                          : "badge-outline opacity-50 bg-base-200"
+                      }`}>
                         {card.status}
                       </span>
                     </div>
