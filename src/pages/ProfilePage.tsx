@@ -35,7 +35,7 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const { 
+  const {
     data: playerHistoryPages,
     fetchNextPage,
     hasNextPage,
@@ -158,45 +158,47 @@ const ProfilePage: React.FC = () => {
     <div className="bg-base-200 rounded-3xl p-6 space-y-6">
       <h2 className="text-2xl font-bold">Achievements</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Object.entries(achievements).map(([key, achievement]) => (
-          <div
-            key={key}
-            className={`relative bg-base-100 p-4 rounded-xl text-center space-y-2 transition-all duration-300 ${achievement.isUnlocked
-                ? 'bg-gradient-to-br from-base-100 to-base-200 shadow-lg border border-base-300'
-                : 'bg-opacity-50'
-              }`}
-          >
-            {achievement.isUnlocked && (
-              <div className="absolute -top-2 -right-2">
-                <div className="badge badge-primary badge-sm">Unlocked</div>
+        {Object.entries(achievements).map(([key, achievement]) => {
+
+          return (
+            <div
+              key={key}
+              className={`relative bg-base-100 p-4 rounded-xl text-center space-y-2 transition-all duration-300 ${achievement.isUnlocked
+                  ? 'bg-gradient-to-br from-base-100 to-base-200 shadow-lg border border-base-300'
+                  : 'bg-opacity-50'
+                }`}
+            >
+              {achievement.isUnlocked && (
+                <div className="absolute -top-2 -right-2">
+                  <div className="badge badge-primary badge-sm">Unlocked</div>
+                </div>
+              )}
+              <div className={`
+                w-16 h-16 mx-auto rounded-full 
+                ${achievement.isUnlocked
+                  ? `bg-gradient-to-br from-primary to-primary/60 shadow-lg shadow-primary/20`
+                  : 'bg-base-200'
+                } 
+                flex items-center justify-center transition-all duration-300
+              `}>
+                <Icon
+                  name={achievement.icon}
+                  className={`text-3xl ${achievement.isUnlocked
+                      ? 'text-base-100'
+                      : 'text-base-content/40'
+                    }`}
+                />
               </div>
-            )}
-            <div className={`
-              w-16 h-16 mx-auto rounded-full 
-              ${achievement.isUnlocked
-                ? `bg-gradient-to-br from-${achievement.color} to-${achievement.color}/60 shadow-lg shadow-${achievement.color}/20`
-                : 'bg-base-200'
-              } 
-              flex items-center justify-center transition-all duration-300
-            `}>
-              <Icon
-                name={achievement.icon}
-                className={`text-3xl ${achievement.isUnlocked
-                    ? 'text-base-100'
-                    : 'text-base-content/40'
-                  }`}
-              />
+              <h3 className={`font-bold ${achievement.isUnlocked ? 'text-primary' : 'text-base-content/60'}`}>
+                {achievement.title}
+              </h3>
+              <p className="text-sm text-base-content/60">{achievement.description}</p>
+              {!achievement.isUnlocked && (
+                <div className="badge badge-ghost badge-sm">Locked</div>
+              )}
             </div>
-            <h3 className={`font-bold ${achievement.isUnlocked ? `text-${achievement.color}` : 'text-base-content/60'
-              }`}>
-              {achievement.title}
-            </h3>
-            <p className="text-sm text-base-content/60">{achievement.description}</p>
-            {!achievement.isUnlocked && (
-              <div className="badge badge-ghost badge-sm">Locked</div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -300,7 +302,7 @@ const ProfilePage: React.FC = () => {
             </table>
 
             {/* Infinite scroll trigger */}
-            <div 
+            <div
               ref={ref}
               className="py-4 text-center"
             >

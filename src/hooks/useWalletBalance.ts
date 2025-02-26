@@ -7,7 +7,8 @@ export const QUERY_KEYS = {
   USER_PROFILE: 'user-profile',
   GAME_HISTORY: 'game-history',
   LEADERBOARD: 'leaderboard',
-  TOP_PLAYERS: 'top-players'
+  TOP_PLAYERS: 'top-players',
+  TRANSACTIONS: 'transactions'
 } as const;
 
 export function useWalletBalance() {

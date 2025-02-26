@@ -56,11 +56,7 @@ const processQueue = (error: Error | null) => {
 apiClient.interceptors.request.use(
   (config) => {
     // Log request for debugging
-    console.log("API Request:", {
-      url: config.url,
-      method: config.method,
-      data: config.data,
-    });
+
     return config;
   },
   (error) => {
@@ -83,11 +79,7 @@ apiClient.interceptors.request.use(
 // Response interceptor
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    console.log("API Response:", {
-      url: response.config.url,
-      status: response.status,
-      data: response.data,
-    });
+
     return response; // Return the full response instead of response.data
   },
   async (error: AxiosError<AuthError>) => {

@@ -110,7 +110,6 @@ export const AuthService = {
     try {
       const refreshToken = Cookies.get(COOKIE_NAMES.REFRESH_TOKEN);
       if (!refreshToken) {
-        console.log("No refresh token found");
         return false;
       }
 

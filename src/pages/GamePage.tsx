@@ -135,9 +135,7 @@ const GamePage: React.FC = () => {
       setRisk(newRisk);
       setIsDrawing(true);
 
-      console.log('Starting game with:', { formattedBet, newRisk });
       const gameResult = await GameService.createNewGame(formattedBet, newRisk);
-      console.log('Game result:', gameResult);
 
       setTimeout(async () => {
         setIsDrawing(false);
