@@ -47,7 +47,7 @@ const ProfilePage: React.FC = () => {
   // Add intersection observer hook
   const { ref, inView } = useInView();
 
-  // Add inside ProfilePage component, near other state declarations
+  // Update the initial sort state to timestamp/desc for newest first
   const [sortField, setSortField] = useState<SortField>('timestamp');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
@@ -213,6 +213,13 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  // Add this before renderRecentActivity
+  const sortedGames = useMemo(() => {
+    return playerHistoryPages?.pages
+      .flatMap(page => page.data)
+      .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp));
+  }, [playerHistoryPages]);
+
   if (!publicKey) {
     return (
       <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center">
@@ -257,47 +264,29 @@ const ProfilePage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {playerHistoryPages.pages.map((page) =>
-                  [...page.data]
-                    .sort((a, b) => {
-                      const modifier = sortOrder === 'asc' ? 1 : -1;
-                      switch (sortField) {
-                        case 'timestamp':
-                          return (new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) * modifier;
-                        case 'buyInAmount':
-                          return (b.buyInAmount - a.buyInAmount) * modifier;
-                        case 'risk':
-                          return (b.risk - a.risk) * modifier;
-                        case 'winnings':
-                          return (b.winnings - a.winnings) * modifier;
-                        default:
-                          return 0;
-                      }
-                    })
-                    .map((game, index) => (
-                      <tr key={`${game.timestamp}-${index}`} className="hover">
-                        <td className="text-sm text-base-content/70">
-                          {getRelativeTime(game.timestamp)}
-                          <div className="text-xs opacity-50">
-                            {new Date(game.timestamp).toLocaleTimeString()}
-                          </div>
-                        </td>
-                        <td>
-                          <span className="badge badge-ghost">{game.handType}</span>
-                        </td>
-                        <td>{game.buyInAmount.toFixed(3)} SOL</td>
-                        <td>{game.risk}x</td>
-                        <td>
-                          <span className={`badge ${game.winnings > 0 ? 'badge-success' : 'badge-error'}`}>
-                            {game.winnings > 0 ? 'Won' : 'Lost'}
-                          </span>
-                        </td>
-                        <td className={game.winnings > 0 ? 'text-success' : 'text-error'}>
-                          {game.winnings > 0 ? '+' : ''}{game.winnings.toFixed(3)} SOL
-                        </td>
-                      </tr>
-                    ))
-                )}
+                {sortedGames?.map((game, index) => (
+                  <tr key={`${game.timestamp}-${index}`} className="hover">
+                    <td className="text-sm text-base-content/70">
+                      {getRelativeTime(game.timestamp)}
+                      <div className="text-xs opacity-50">
+                        {new Date(game.timestamp).toLocaleTimeString()}
+                      </div>
+                    </td>
+                    <td>
+                      <span className="badge badge-ghost">{game.handType}</span>
+                    </td>
+                    <td>{game.buyInAmount.toFixed(3)} SOL</td>
+                    <td>{game.risk}x</td>
+                    <td>
+                      <span className={`badge ${game.winnings > 0 ? 'badge-success' : 'badge-error'}`}>
+                        {game.winnings > 0 ? 'Won' : 'Lost'}
+                      </span>
+                    </td>
+                    <td className={game.winnings > 0 ? 'text-success' : 'text-error'}>
+                      {game.winnings > 0 ? '+' : ''}{game.winnings.toFixed(3)} SOL
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
 

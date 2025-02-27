@@ -3,13 +3,16 @@ import { UserService } from '../services/user.service';
 import { UserProfile } from '../types/user.interface';
 import { toast } from 'react-toastify';
 import { QUERY_KEYS } from './useWalletBalance';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 export function useUserProfile() {
   const queryClient = useQueryClient();
+  const { publicKey } = useWallet();
 
   const profileQuery = useQuery({
     queryKey: [QUERY_KEYS.USER_PROFILE],
     queryFn: UserService.getProfile,
+    enabled: !!publicKey, // Only fetch if wallet is connected
     staleTime: 300000, // Consider profile data stale after 5 minutes
     retry: 2,
     throwOnError: (error: Error) => {

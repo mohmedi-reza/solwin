@@ -137,16 +137,8 @@ export const AuthService = {
   },
 
   async logout() {
-    try {
-      if (this.isAuthenticated()) {
-        await apiClient.post("/auth/logout");
-      }
-    } catch (err) {
-      console.error("Logout error:", err);
-    } finally {
-      this.setAuthState("unauthenticated");
-      this.clearTokens();
-    }
+    this.setAuthState("unauthenticated");
+    this.clearTokens();
   },
 
   getAccessToken(): string | undefined {

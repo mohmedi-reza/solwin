@@ -26,6 +26,7 @@ const Toolbar: React.FC = () => {
     const [authLoading, setAuthLoading] = useState(false);
     const [authState, setAuthState] = useState<AuthState>('unauthenticated');
     const { data: walletData, isLoading: isWalletDataLoading } = useWalletBalance();
+    const [manualDisconnect, setManualDisconnect] = useState(false);
 
     const handleLogin = useCallback(async () => {
         if (!publicKey || !signMessage || authState === 'authenticating') return;
@@ -113,25 +114,36 @@ const Toolbar: React.FC = () => {
             publicKey &&
             !AuthService.isAuthenticated() &&
             !authLoading &&
-            authState === 'unauthenticated';
+            authState === 'unauthenticated' &&
+            !manualDisconnect;
 
         if (shouldAttemptLogin) {
             handleLogin();
         }
-    }, [wallet, publicKey, authLoading, authState, handleLogin]);
+    }, [wallet, publicKey, authLoading, authState, handleLogin, manualDisconnect]);
 
-    const handleDisconnect = useCallback(async () => {
-        // First logout from backend
-        await AuthService.logout();
+    const handleDisconnect = useCallback(() => {
+        // Set manual disconnect flag
+        setManualDisconnect(true);
         // Clear all storage
         localStorage.clear();
         sessionStorage.clear();
+        // Clear auth state and tokens
+        AuthService.clearTokens();
+        AuthService.setAuthState('unauthenticated');
         // Disconnect wallet
         disconnect();
         // Reset states
         setAuthState('unauthenticated');
         setBalance(null);
     }, [disconnect]);
+
+    // Reset manual disconnect flag when wallet changes
+    useEffect(() => {
+        if (!wallet) {
+            setManualDisconnect(false);
+        }
+    }, [wallet]);
 
     const copyAddress = useCallback(() => {
         if (publicKey) {
@@ -202,8 +214,8 @@ const Toolbar: React.FC = () => {
 
                         {/* Actions - Responsive */}
                         <div className="flex items-center gap-2 sm:gap-4">
-                            {/* Balance Dropdown */}
-                            {(balance !== null || walletData?.balance !== null) && (
+                            {/* Balance Dropdown - Only show when wallet is connected */}
+                            {wallet && publicKey && (balance !== null || walletData?.balance !== null) && (
                                 <div className="dropdown dropdown-end">
                                     <div tabIndex={0} role="button" className="bg-base-200 flex gap-1 sm:flex items-center text-base-content/70 hover:text-base-content cursor-pointer p-2 rounded-lg hover:bg-base-200">
                                         <Icon name={getBalanceDisplay().icon as IconName} className={`${getBalanceDisplay().iconClass} text-lg`} />

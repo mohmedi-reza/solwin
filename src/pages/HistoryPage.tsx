@@ -206,10 +206,10 @@ const HistoryPage: React.FC = () => {
             <div className="stat-title">Average Transaction</div>
             <div className="stat-value">
               <div className="text-sm">
-                D: {stats.avgDeposit.toFixed(4)} SOL
+                <span className='text-primary'> D:</span> {stats.avgDeposit.toFixed(4)} SOL
               </div>
               <div className="text-sm">
-                W: {stats.avgWithdrawal.toFixed(4)} SOL
+                <span className='text-secondary'> W:</span> {stats.avgWithdrawal.toFixed(4)} SOL
               </div>
             </div>
           </div>
@@ -218,10 +218,10 @@ const HistoryPage: React.FC = () => {
             <div className="stat-title">Largest Transaction</div>
             <div className="stat-value">
               <div className="text-sm">
-                D: {stats.largestDeposit.toFixed(4)} SOL
+               <span className='text-primary'> D:</span> {stats.largestDeposit.toFixed(4)} SOL
               </div>
               <div className="text-sm">
-                W: {stats.largestWithdrawal.toFixed(4)} SOL
+                <span className='text-secondary'> W:</span> {stats.largestWithdrawal.toFixed(4)} SOL
               </div>
             </div>
           </div>
@@ -306,7 +306,7 @@ const HistoryPage: React.FC = () => {
                     <tr key={tx.signature}>
                       <td>{new Date(tx.timestamp).toLocaleString()}</td>
                       <td>
-                        <span className={`badge ${tx.type === 'DEPOSIT' ? 'badge-primary' :
+                        <span className={`badge badge-outline badge-sm w-18 ${tx.type === 'DEPOSIT' ? 'badge-primary' :
                             tx.type === 'WITHDRAW' ? 'badge-secondary' :
                               'badge-neutral'
                           }`}>
@@ -317,7 +317,7 @@ const HistoryPage: React.FC = () => {
                         {tx.amount > 0 ? '+' : ''}{tx.amount} SOL
                       </td>
                       <td>
-                        <span className={`badge badge-sm ${tx.status === 'success' ? 'badge-success' : 'badge-error'}`}>
+                        <span className={`badge badge-sm w-18 ${tx.status === 'success' ? 'badge-success' : 'badge-error'}`}>
                           {tx.status}
                         </span>
                       </td>
