@@ -1,8 +1,7 @@
+import { useWallet } from '@solana/wallet-adapter-react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
 import { LeaderboardService } from '../services/leaderboard.service';
 import { QUERY_KEYS } from './useWalletBalance';
-import { useWallet } from '@solana/wallet-adapter-react';
 
 export function usePlayerHistory(limit: number = 10) {
   const { publicKey } = useWallet();
@@ -19,7 +18,8 @@ export function usePlayerHistory(limit: number = 10) {
     staleTime: 30000,
     retry: 2,
     throwOnError: (error: Error) => {
-      toast.error(`Failed to fetch game history: ${error.message}`);
+      // toast.error(`Failed to fetch game history: ${error.message}`);
+      console.error(`Failed to fetch game history: ${error.message}`);
       return false;
     }
   });

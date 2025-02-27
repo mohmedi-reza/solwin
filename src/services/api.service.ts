@@ -79,8 +79,7 @@ apiClient.interceptors.request.use(
 // Response interceptor
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-
-    return response; // Return the full response instead of response.data
+    return response;
   },
   async (error: AxiosError<AuthError>) => {
     console.error("API Error:", {
@@ -92,6 +91,7 @@ apiClient.interceptors.response.use(
 
     const originalRequest = error.config as RetryableRequest;
 
+    // Handle 401 and token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         // If token refresh is in progress, queue the request
@@ -129,9 +129,37 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Improve error handling
-    if (error.response?.status === 500) {
-      toast.error("Server error. Please try again later.");
+    // Enhanced error handling for different status codes
+    if (error.response) {
+      switch (error.response.status) {
+        case 400:
+          toast.error("Invalid request. Please check your input.");
+          break;
+        case 403:
+          toast.error("You don't have permission to perform this action.");
+          break;
+        case 404:
+          toast.error("Resource not found.");
+          break;
+        case 422:
+          toast.error("Validation error. Please check your input.");
+          break;
+        case 429:
+          toast.error("Too many requests. Please try again later.");
+          break;
+        case 500:
+          toast.error("Server error. Please try again later.");
+          break;
+        case 502:
+          toast.error("Bad gateway. Please try again later.");
+          break;
+        case 503:
+          toast.error("Service unavailable. Please try again later.");
+          break;
+        default:
+          toast.error("An unexpected error occurred. Please try again.");
+          break;
+      }
     } else if (error.code === "ECONNABORTED") {
       toast.error("Request timeout. Please check your connection.");
     } else if (!error.response) {

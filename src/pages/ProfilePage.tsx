@@ -58,9 +58,21 @@ const ProfilePage: React.FC = () => {
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Update the stats calculation to handle paginated data
+  // Update the stats calculation to safely handle empty data
   const stats = useMemo(() => {
-    const allGames = playerHistoryPages?.pages.flatMap(page => page.data) || [];
+    if (!playerHistoryPages?.pages?.length) {
+      return {
+        totalGames: 0,
+        wins: 0,
+        losses: 0,
+        winRate: 0,
+        lossRate: 0,
+        totalWinnings: 0,
+        totalWagered: 0,
+      };
+    }
+
+    const allGames = playerHistoryPages.pages.flatMap(page => page.data || []);
     const totalGames = allGames.length;
     const wins = allGames.filter(game => game.winnings > 0).length;
     const losses = totalGames - wins;
@@ -213,10 +225,12 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  // Add this before renderRecentActivity
+  // Update the sortedGames calculation to safely handle empty data
   const sortedGames = useMemo(() => {
-    return playerHistoryPages?.pages
-      .flatMap(page => page.data)
+    if (!playerHistoryPages?.pages?.length) return [];
+    
+    return playerHistoryPages.pages
+      .flatMap(page => page.data || [])
       .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp));
   }, [playerHistoryPages]);
 
@@ -242,7 +256,7 @@ const ProfilePage: React.FC = () => {
       </div>
 
       <div className="overflow-x-auto">
-        {playerHistoryPages?.pages[0].data.length ? (
+        {sortedGames?.length > 0 ? (
           <>
             <table className="table w-full">
               <thead>
@@ -261,7 +275,7 @@ const ProfilePage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {sortedGames?.map((game, index) => (
+                {sortedGames.map((game, index) => (
                   <tr key={`${game.timestamp}-${index}`} className="hover">
                     <td className="text-sm text-base-content/70">
                       {getRelativeTime(game.timestamp)}

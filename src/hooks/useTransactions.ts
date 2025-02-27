@@ -1,8 +1,7 @@
+import { useWallet } from '@solana/wallet-adapter-react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
 import { TransactionService } from '../services/transaction.service';
 import { QUERY_KEYS } from './useWalletBalance';
-import { useWallet } from '@solana/wallet-adapter-react';
 
 interface PageParam {
   page: number;
@@ -37,7 +36,8 @@ export function useTransactions(limit: number = 20) {
     refetchInterval: 5000, // Refetch every 5 seconds
     retry: 2,
     throwOnError: (error: Error) => {
-      toast.error(`Failed to fetch transactions: ${error.message}`);
+      // toast.error(`Failed to fetch transactions: ${error.message}`);
+      console.error(`Failed to fetch transactions: ${error.message}`);
       return false;
     }
   });

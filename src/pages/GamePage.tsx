@@ -124,7 +124,7 @@ const GamePage: React.FC = () => {
 
     // Existing logic for connected wallet
     if (!walletData?.balance || walletData.balance < 0.1) {
-      toast.error('Insufficient balance to play');
+      toast.error('Insufficient balance to play. First you should Deposit to your account.',);
       return;
     }
     

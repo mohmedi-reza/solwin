@@ -1,8 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
-import { UserService, WalletBalanceResponse } from '../services/user.service';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { useQuery } from '@tanstack/react-query';
 import { AuthService } from '../services/auth.service';
+import { UserService, WalletBalanceResponse } from '../services/user.service';
 
 export const QUERY_KEYS = {
   WALLET_BALANCE: 'wallet-balance',
@@ -29,7 +28,8 @@ export function useWalletBalance() {
     throwOnError: (error: Error) => {
       // Only show error if we're actually connected
       if (connected && isAuthenticated) {
-        toast.error(`Failed to fetch wallet balance: ${error.message}`);
+        // toast.error(`Failed to fetch wallet balance: ${error.message}`);
+        console.error(`Failed to fetch wallet balance: ${error.message}`);
       }
       return false;
     }
