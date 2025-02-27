@@ -11,6 +11,7 @@ import { useLeaderboard, useTopPlayers } from '../hooks/useLeaderboard';
 import { QUERY_KEYS, useWalletBalance } from '../hooks/useWalletBalance';
 import { GameService } from '../services/game.service';
 import { Card, HandResult } from '../types/poker.interface';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 
 interface ShufflingCard extends Card {
   key: number;
@@ -49,6 +50,8 @@ const GamePage: React.FC = () => {
   } = useTopPlayers();
 
   const { ref: topPlayersRef, inView: topPlayersInView } = useInView();
+
+  const { setVisible } = useWalletModal();
 
   useEffect(() => {
     if (leaderboardInView && hasNextLeaderboard && !isFetchingNextLeaderboard) {
@@ -112,7 +115,14 @@ const GamePage: React.FC = () => {
   //   }
   // }, [publicKey]);
 
-  const handleStartGame = () => {
+  const handleStartGame = async () => {
+    // If wallet is not connected, show wallet modal
+    if (!publicKey) {
+      setVisible(true);
+      return;
+    }
+
+    // Existing logic for connected wallet
     if (!walletData?.balance || walletData.balance < 0.1) {
       toast.error('Insufficient balance to play');
       return;
@@ -235,7 +245,17 @@ const GamePage: React.FC = () => {
                         onClick={handleStartGame}
                         className="relative text-nowrap btn btn-primary btn-lg text-xl px-4 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
                       >
-                        {!walletData?.balance || walletData.balance < 0.1 ? (
+                        {!publicKey ? (
+                          <>
+                            <Icon name="wallet" className="text-3xl" />
+                            Connect Your Wallet
+                            <div className="absolute top-0 right-0 -mt-2 -mr-2">
+                              <span className="relative flex h-4 w-4">
+                                <span className="animate-ping absolute inline-flex status status-error size-3"></span>
+                              </span>
+                            </div>
+                          </>
+                        ) : !walletData?.balance || walletData.balance < 0.1 ? (
                           <>
                             <Icon name="wallet" className="text-3xl" />
                             Deposit to Start Playing
