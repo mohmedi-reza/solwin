@@ -1,12 +1,16 @@
 @import "tailwindcss";
+
+/* Theme Configuration */
 @plugin "daisyui" {
   themes: light --default, dark --prefersdark, light;
 }
 
+/* Font Configuration */
 @theme {
   --font-sans: "IRANSans", sans-serif;
 }
 
+/* Global Styles */
 * {
   scrollbar-width: none;
   -webkit-user-select: none; /* Chrome all / Safari all */
@@ -15,11 +19,13 @@
   user-select: none;
 }
 
+/* Scrollbar Styles */
 ::-webkit-scrollbar {
   display: none;
 }
 
-.wallet-adapter-button-trigger{
+/* Wallet Adapter Styles */
+.wallet-adapter-button-trigger {
   background-color: unset !important;
 }
 

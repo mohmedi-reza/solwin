@@ -125,94 +125,78 @@ const BettingSection: React.FC<BettingSectionProps> = ({ onClose, onConfirm }) =
   };
 
   return (
-    <div className="relative bg-none rounded-3xl ">
-
-      <div className="rounded-2xl w-full animate-fadeIn ">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row  items-start md:items-center justify-between mb-6 ">
-          <div className='flex gap-4  p-2 rounded-lg'>
-            {/* Back Button */}
+    <div className="relative">
+      <div className="rounded-2xl w-full animate-fadeIn">
+        {/* Header - Modernized */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6">
+          <div className='flex items-center gap-4'>
             <button
               onClick={onClose}
-              className="rounded-2xl btn-soft z-50 left-4 sm:left-6 top-4 sm:top-6 btn btn-square backdrop-blur-sm hover:/80 transition-all"
+              className="rounded-2xl btn-soft z-50 left-4 sm:left-6 top-4 sm:top-6 btn btn-square backdrop-blur-sm hover:bg-base-200/80 transition-all"
             >
-              <Icon name="arrowLeft" className="text-xl sm:text-2xl" />
+              <Icon name="arrowLeft" className="text-xl" />
             </button>
-            <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <h2 className="text-2xl font-bold text-primary">
               Place Your Bet
             </h2>
           </div>
 
           {publicKey && (
-            <div className='flex gap-4  p-2 rounded-lg'>
-              <p className="text-base-content/60 text-nowrap">
-                <span className='text-xs'>Game:</span>
-                <span className="font-bold text-primary">
-                  {pdaBalance?.toFixed(4) || '0'} <span className='text-xs text-accent'>SOL</span>
+            <div className='flex gap-3 sm:gap-4 items-center w-full sm:w-auto mt-2 sm:mt-0 justify-between sm:justify-start'>
+              <div className="flex flex-col items-end">
+                <span className='text-xs text-base-content/60'>Game Balance</span>
+                <span className="font-bold text-primary text-sm sm:text-base">
+                  {pdaBalance?.toFixed(4)} SOL
                 </span>
-              </p>
-              <p className="text-base-content/60 text-nowrap">
-                <span className='text-xs'>Wallet:</span>
-                <span className="font-bold text-primary">
-                  {walletBalance?.toFixed(4) || '0'} <span className='text-xs text-accent'>SOL</span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className='text-xs text-base-content/60'>Wallet Balance</span>
+                <span className="font-bold text-primary text-sm sm:text-base">
+                  {walletBalance?.toFixed(4)} SOL
                 </span>
-              </p>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Three Column Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end border border-base-300 bg-base-100 rounded-2xl">
-          {/* Column 1 - Bet Amount */}
-          <div className="  rounded-xl p-4  flex-1 h-full">
-            <h3 className=" opacity-40 font-semibold flex items-center gap-2">
-              <Icon name="wallet" className="text-xl text-primary" />
-              Your Bet
+        {/* Main Grid - Updated for equal height columns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 pb-4 border-base-300 pt-4 border-b">
+          {/* Bet Amount Section */}
+          <div className="flex flex-col h-full">
+            <h3 className="text-lg font-medium flex items-center gap-2 mb-4 text-base-content/30">
+              <Icon name="wallet" className="text-primary" />
+              Bet Amount
             </h3>
-            <div className="space-y-2 mt-6 ">
-              {/* Bet Input */}
-              <div className=" p-4 rounded-xl">
-                <div className="flex justify-between items-center">
-                  <label className="flex items-center gap-2">
-                    {/* <Icon name="moneySend" className="text-2xl text-primary" /> */}
-                    <span className='text-base font-semibold'>Amount</span>
-                  </label>
-                  <div className="flex gap-2 items-center">
-                    <button
-                      onClick={decrementBet}
-                      className="btn btn-circle btn-soft btn-sm btn-primary text-xl"
-                    >
-                      <span className='text-3xl p-0 m-0'>-</span>
-                    </button>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        value={bet}
-                        onChange={handleBetChange}
-                        className={`input text-xl text-primary input-bordered w-24 text-center font-bold ${error ? 'input-error border-2' : ''}`}
-                        min={0.05}
-                        step={0.0001}
-                        max={pdaBalance || 0}
-                      />
-                      {error && (
-                        <div className="absolute -bottom-5 left-0 right-0 text-center">
-                          <span className="text-xs text-error text-nowrap">{error}</span>
-                        </div>
-                      )}
-                    </div>
-                    <button
-                      onClick={incrementBet}
-                      className="btn btn-circle btn-soft btn-sm btn-primary "
-                    >
-                      <span className='text-xl p-0 m-0'>+</span>
-
-                    </button>
-                  </div>
-                </div>
+            
+            <div className="flex-1 flex flex-col justify-between">
+              <div className="flex justify-between items-center bg-base-200/50 rounded-2xl p-4 mb-4 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                <button
+                  onClick={decrementBet}
+                  className="btn btn-circle btn-ghost btn-sm"
+                >
+                  <span className='text-2xl'>-</span>
+                </button>
+                
+                <input
+                  type="number"
+                  value={bet}
+                  onChange={handleBetChange}
+                  className={`input bg-transparent outline-none focus:outline-none border-none text-center shadow-none w-24 text-xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${error ? 'text-error' : 'text-primary'}`}
+                  min={0.05}
+                  step={0.0001}
+                  max={pdaBalance || 0}
+                />
+                
+                <button
+                  onClick={incrementBet}
+                  className="btn btn-circle btn-ghost btn-sm"
+                >
+                  <span className='text-2xl'>+</span>
+                </button>
               </div>
 
-              {/* Quick Bet Presets */}
-              <div className="grid grid-cols-4  gap-2">
+              {/* Bet Amount Presets */}
+              <div className="grid grid-cols-4 gap-2 mt-auto">
                 {betPresets.map((preset, index) => (
                   <button
                     key={index}
@@ -220,7 +204,9 @@ const BettingSection: React.FC<BettingSectionProps> = ({ onClose, onConfirm }) =
                       setBet(preset.amount);
                       setSelectedPreset(index);
                     }}
-                    className={`btn btn-sm text-nowrap ${selectedPreset === index ? 'btn-primary' : 'btn-outline'}`}
+                    className={`btn btn-xs rounded-lg ${selectedPreset === index 
+                      ? 'btn-primary btn-outline text-primary' 
+                      : 'btn-ghost btn-soft'}`}
                   >
                     {preset.label}
                   </button>
@@ -229,41 +215,42 @@ const BettingSection: React.FC<BettingSectionProps> = ({ onClose, onConfirm }) =
             </div>
           </div>
 
-          {/* Column 2 - Risk Level */}
-          <div className="  rounded-xl p-4  flex-1 h-full">
-            <h3 className=" opacity-40 font-semibold flex items-center gap-2">
-              <Icon name="game" className="text-xl text-primary" />
+          {/* Risk Level Section */}
+          <div className="flex flex-col gap h-full border-t border-base-300 md:border-t-0  pt-4 md:pt-0">
+            <h3 className="text-lg font-medium flex items-center gap-2 mb-4 text-base-content/30">
+              <Icon name="game" className="text-primary" />
               Risk Level
             </h3>
-            <div className="space-y-5">
-              {/* Risk Controls */}
-              <div className="space-y-2 mt-6 ">
+            
+            <div className="flex-1 flex flex-col justify-between">
+              <div className="">
                 <div className="flex justify-between items-center">
                   <span className="text-base-content/60">Level</span>
-                  <span className="badge badge-sm badge-primary">{risk}x</span>
+                  <span className="badge badge-primary badge-outline">
+                    {risk}x
+                  </span>
                 </div>
+                
                 <input
                   type="range"
                   value={risk}
                   onChange={(e) => setRisk(Number(e.target.value))}
-                  className="range range-primary range-lg"
+                  className="range range-primary  range-xs w-full"
                   min={0.5}
                   max={1.0}
                   step={0.05}
                 />
-                {/* <div className="flex justify-between text-sm text-base-content/60">
-                  <span>Safer</span>
-                  <span>Riskier</span>
-                </div> */}
               </div>
-
-              {/* Risk Presets */}
-              <div className="grid grid-cols-4 gap-2">
+              
+              {/* Risk Level Presets */}
+              <div className="grid grid-cols-4 gap-2 mt-2 md:mt-auto">
                 {riskPresets.map((preset, index) => (
                   <button
                     key={index}
                     onClick={() => setRisk(preset.value)}
-                    className={`btn btn-sm ${risk === preset.value ? 'btn-primary' : 'btn-outline'}`}
+                    className={`btn btn-xs rounded-lg ${risk === preset.value 
+                      ? 'btn-primary btn-outline text-primary' 
+                      : 'btn-ghost btn-soft'}`}
                   >
                     {preset.label}
                   </button>
@@ -272,62 +259,71 @@ const BettingSection: React.FC<BettingSectionProps> = ({ onClose, onConfirm }) =
             </div>
           </div>
 
-          {/* Column 3 - Potential Results */}
-          <div className="  rounded-xl p-4  flex-1 h-full">
-            <h3 className=" opacity-40 font-semibold flex items-center gap-2">
-              <Icon name="wallet" className="text-xl text-primary" />
+          {/* Potential Results Section */}
+          <div className="flex flex-col h-full border-t border-base-300 md:border-t-0  pt-4 md:pt-0">
+            <h3 className="text-lg font-medium flex items-center gap-2 mb-4 text-base-content/30">
+              <Icon name="moneys" className="text-primary" />
               Potential Results
             </h3>
-            <div className="space-y-2 mt-6 ">
-              <div className="bg-success/10 py-3 px-3 flex justify-between rounded-lg">
-                <p className="text-sm text-base-content/60">Max Win (Royal Flush)</p>
-                <p className="text-xl font-bold text-success">+{potentialWin.toFixed(4)}</p>
-              </div>
-              <div className="bg-error/10 py-3 px-3 flex justify-between rounded-lg">
-                <p className="text-sm text-base-content/60">Max Loss</p>
-                <p className="text-xl font-bold text-error">-{(bet * risk).toFixed(4)}</p>
+            
+            <div className="flex-1 flex flex-col justify-between">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="bg-success/5 p-4 rounded-2xl flex items-center justify-between">
+                  <p className="text-sm text-base-content/60">Max Win</p>
+                  <p className="text-xl font-bold text-success">
+                    +{potentialWin.toFixed(4)}
+                    <span className="text-xs ml-1">SOL</span>
+                  </p>
+                </div>
+                
+                <div className="bg-error/5 p-4 rounded-2xl flex items-center justify-between">
+                  <p className="text-sm text-base-content/60">Max Loss</p>
+                  <p className="text-xl font-bold text-error">
+                    -{(bet * risk).toFixed(4)}
+                    <span className="text-xs ml-1">SOL</span>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        {/* <div className='divider'></div> */}
-        {/* Action Buttons - Below Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
-          <div className="flex gap-2">
-            <button
-              onClick={handleConfirm}
-              disabled={!isValidBet || isSubmitting}
-              className={`relative btn btn-primary flex-1 ${!isValidBet || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <span className=' absolute top-1 left-1 status status-error animate-ping'></span>
-              {isSubmitting ? (
-                <>
-                  <span className="loading loading-spinner"></span>
-                  Placing...
-                </>
-              ) : (
-                <>
-                  <Icon name="game" className="text-xl" />
-                  Place Bet
-                </>
-              )}
-            </button>
-            <button
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="btn btn-outline flex-1"
-            >
-              <Icon name="closeCircle" className="text-xl" />
-              Cancel
-            </button>
 
-          </div>
+        {/* Action Buttons - Modernized */}
+        <div className="flex gap-4 mt-6">
+          <button
+            onClick={handleConfirm}
+            disabled={!isValidBet || isSubmitting}
+            className="btn btn-primary  min-h-[3rem] relative rounded-xl"
+          >
+            {isSubmitting ? (
+              <>
+                <span className="loading loading-spinner"></span>
+                Placing Bet...
+              </>
+            ) : (
+              <>
+                <Icon name="poker1" className="text-3xl" />
+                <span className='text-xl'>Start Game</span>
+              </>
+            )}
+            {isValidBet && !isSubmitting && (
+              <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-error animate-ping"></span>
+            )}
+          </button>
+          
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="btn btn-ghost  min-h-[3rem] rounded-xl"
+          >
+            Cancel
+          </button>
         </div>
 
-        {/* Error Display */}
+        {/* Error Display - Modernized */}
         {error && (
-          <div className="bg-error/10 p-3 rounded-lg text-center mt-4">
-            <p className="text-error font-semibold">{error}</p>
+          <div className="mt-4 p-4 rounded-2xl bg-error/5 border border-error/20">
+            <p className="text-error text-center">{error}</p>
           </div>
         )}
       </div>
@@ -335,4 +331,4 @@ const BettingSection: React.FC<BettingSectionProps> = ({ onClose, onConfirm }) =
   );
 };
 
-export default BettingSection; 
+export default BettingSection;

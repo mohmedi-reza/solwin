@@ -189,7 +189,7 @@ const GamePage: React.FC = () => {
       <div className="min-h-[calc(100vh-5rem)] flex flex-col justify-start bg-base-100">
         <div className="relative w-full max-w-6xl space-y-12">
           {/* Show either Hero Section or Betting Interface */}
-          <div className="relative py-8 sm:py-12 md:py-16 px-4 sm:px-6 md:px-8 rounded-3xl border border-base-300 overflow-hidden">
+          <div className="relative py-6 sm:py-12 md:py-8 px-4 sm:px-6 md:px-8 rounded-3xl border border-base-300 overflow-hidden">
             {/* Background Effects - Different based on view */}
             {!showBettingModal ? (
               <>

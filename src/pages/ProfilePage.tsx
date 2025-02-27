@@ -254,9 +254,6 @@ const ProfilePage: React.FC = () => {
                   <th onClick={() => handleSort('buyInAmount')} className="cursor-pointer hover:bg-base-300">
                     Bet {sortField === 'buyInAmount' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th onClick={() => handleSort('risk')} className="cursor-pointer hover:bg-base-300">
-                    Risk {sortField === 'risk' && (sortOrder === 'asc' ? '↑' : '↓')}
-                  </th>
                   <th>Result</th>
                   <th onClick={() => handleSort('winnings')} className="cursor-pointer hover:bg-base-300">
                     Net Win {sortField === 'winnings' && (sortOrder === 'asc' ? '↑' : '↓')}
@@ -276,7 +273,6 @@ const ProfilePage: React.FC = () => {
                       <span className="badge badge-ghost">{game.handType}</span>
                     </td>
                     <td>{game.buyInAmount.toFixed(3)} SOL</td>
-                    <td>{game.risk}x</td>
                     <td>
                       <span className={`badge ${game.winnings > 0 ? 'badge-success' : 'badge-error'}`}>
                         {game.winnings > 0 ? 'Won' : 'Lost'}
