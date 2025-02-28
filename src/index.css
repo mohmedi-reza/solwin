@@ -2,11 +2,11 @@
 
 /* Theme Configuration */
 @plugin "daisyui" {
-  themes: light --default, dark --prefersdark, mytheme;
+  themes: light --default, dark --prefersdark, solwinTheme;
 }
 
 @plugin "daisyui/theme" {
-  name: "mytheme";
+  name: "solwinTheme";
   default: true;
   prefersdark: false;
   color-scheme: light;
@@ -78,6 +78,6 @@
 }
 
 /* Button Styles */
-.btn-primary {
+.btn-primary,.btn-secondary,.btn-accent {
   @apply rounded-xl;
 }

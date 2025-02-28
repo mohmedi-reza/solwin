@@ -5,7 +5,6 @@ import ProfilePage from "../pages/ProfilePage";
 import GamePage from "../pages/GamePage";
 import HistoryPage from "../pages/HistoryPage";
 import NotFoundPage from "../pages/NotFoundPage";
-import DuelGamePage from "../pages/DuelGamePage";
 
 const AppRoutes = () => {
   return (
@@ -16,7 +15,6 @@ const AppRoutes = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/me" element={<ProfilePage />} />
           <Route path="/game" element={<GamePage />} />
-          <Route path="/duel" element={<DuelGamePage />} />
           <Route path="/history" element={<HistoryPage />} />
         </Route>
         {/* Routes without layout */}

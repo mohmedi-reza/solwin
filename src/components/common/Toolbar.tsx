@@ -11,6 +11,7 @@ import { AuthService, AuthState } from '../../services/auth.service';
 import AddressShort from '../AddressShort';
 import Icon from '../icon/icon.component';
 import { IconName } from '../icon/iconPack';
+import WalletModal from '../WalletModal';
 
 // Add new type for balance display
 type BalanceDisplay = 'pda' | 'wallet';
@@ -27,6 +28,7 @@ const Toolbar: React.FC = () => {
     const [authState, setAuthState] = useState<AuthState>('unauthenticated');
     const { data: walletData, isLoading: isWalletDataLoading } = useWalletBalance();
     const [manualDisconnect, setManualDisconnect] = useState(false);
+    const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
     const handleLogin = useCallback(async () => {
         if (!publicKey || !signMessage || authState === 'authenticating') return;
@@ -179,6 +181,10 @@ const Toolbar: React.FC = () => {
         };
     };
 
+    const handleWalletModalSuccess = () => {
+        // Refresh data if needed
+    };
+
     return (
         <>
             {/* Header */}
@@ -217,54 +223,66 @@ const Toolbar: React.FC = () => {
 
                         {/* Actions - Responsive */}
                         <div className="flex items-center gap-2 sm:gap-4">
-                            {/* Balance Dropdown - Only show when wallet is connected */}
+                            {/* Balance Display and Actions - Only show when wallet is connected */}
                             {wallet && publicKey && (balance !== null || walletData?.balance !== null) && (
-                                <div className="dropdown dropdown-end">
-                                    <div tabIndex={0} role="button" className="bg-base-200 flex gap-1 sm:flex items-center text-base-content/70 hover:text-base-content cursor-pointer p-2 rounded-lg hover:bg-base-200">
-                                        <Icon name={getBalanceDisplay().icon as IconName} className={`${getBalanceDisplay().iconClass} text-lg`} />
-                                        {getBalanceDisplay().isLoading ? (
-                                            <span className="loading loading-spinner loading-sm"></span>
-                                        ) : (
-                                            <p className='flex gap-2'>
-                                                <span>
-                                                    {selectedBalance === 'pda'
-                                                        ? (walletData?.balance || 0).toFixed(4)
-                                                        : (Number(balance) / LAMPORTS_PER_SOL).toFixed(4)}
-                                                </span>
-                                                <span>SOL</span>
-                                            </p>
-                                        )}
-                                        <Icon name="arrowSquareDown" className="text-white text-sm opacity-50" />
+                                <div className="flex items-center gap-2">
+                                    {/* Balance Dropdown */}
+                                    <div className="dropdown dropdown-end">
+                                        <div tabIndex={0} role="button" className="bg-base-200 flex gap-1 sm:flex items-center text-base-content/70 hover:text-base-content cursor-pointer p-2 rounded-lg hover:bg-base-200">
+                                            <Icon name={getBalanceDisplay().icon as IconName} className={`${getBalanceDisplay().iconClass} text-lg`} />
+                                            {getBalanceDisplay().isLoading ? (
+                                                <span className="loading loading-spinner loading-sm"></span>
+                                            ) : (
+                                                <p className='flex gap-2'>
+                                                    <span>
+                                                        {selectedBalance === 'pda'
+                                                            ? (walletData?.balance || 0).toFixed(4)
+                                                            : (Number(balance) / LAMPORTS_PER_SOL).toFixed(4)}
+                                                    </span>
+                                                    <span>SOL</span>
+                                                </p>
+                                            )}
+                                            <Icon name="arrowSquareDown" className="text-white text-sm opacity-50" />
+                                        </div>
+                                        <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-200 rounded-box w-fit">
+                                            <li className="menu-title">
+                                                <span>Select Balance</span>
+                                            </li>
+                                            <li>
+                                                <button
+                                                    onClick={() => setSelectedBalance('pda')}
+                                                    className={selectedBalance === 'pda' ? 'active' : ''}
+                                                >
+                                                    <Icon name="wallet" className="text-success" />
+                                                    <span className='text-nowrap'>Game Balance:</span>
+                                                    <span className="ml-auto">
+                                                        {(walletData?.balance || 0).toFixed(4)} SOL
+                                                    </span>
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button
+                                                    onClick={() => setSelectedBalance('wallet')}
+                                                    className={selectedBalance === 'wallet' ? 'active' : ''}
+                                                >
+                                                    <Icon name="coin" className="text-primary" />
+                                                    <span className='text-nowrap'>Wallet Balance:</span>
+                                                    <span className="ml-auto">
+                                                        {(Number(balance) / LAMPORTS_PER_SOL).toFixed(4)} SOL
+                                                    </span>
+                                                </button>
+                                            </li>
+                                        </ul>
                                     </div>
-                                    <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-200 rounded-box w-fit">
-                                        <li className="menu-title">
-                                            <span>Select Balance</span>
-                                        </li>
-                                        <li>
-                                            <button
-                                                onClick={() => setSelectedBalance('pda')}
-                                                className={selectedBalance === 'pda' ? 'active' : ''}
-                                            >
-                                                <Icon name="wallet" className="text-success" />
-                                                <span className='text-nowrap'>Game Balance:</span>
-                                                <span className="ml-auto">
-                                                    {(walletData?.balance || 0).toFixed(4)} SOL
-                                                </span>
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <button
-                                                onClick={() => setSelectedBalance('wallet')}
-                                                className={selectedBalance === 'wallet' ? 'active' : ''}
-                                            >
-                                                <Icon name="coin" className="text-primary" />
-                                                <span className='text-nowrap'>Wallet Balance:</span>
-                                                <span className="ml-auto">
-                                                    {(Number(balance) / LAMPORTS_PER_SOL).toFixed(4)} SOL
-                                                </span>
-                                            </button>
-                                        </li>
-                                    </ul>
+
+                                    {/* Deposit/Withdraw Button */}
+                                    <button 
+                                        onClick={() => setIsWalletModalOpen(true)}
+                                        className="btn btn-primary btn-sm btn-circle"
+                                        title="Deposit/Withdraw"
+                                    >
+                                        <Icon name="add" className="text-base-100 text-lg" />
+                                    </button>
                                 </div>
                             )}
 
@@ -363,6 +381,13 @@ const Toolbar: React.FC = () => {
                     ))}
                 </div>
             </div>
+
+            <WalletModal
+                isOpen={isWalletModalOpen}
+                onClose={() => setIsWalletModalOpen(false)}
+                walletBalance={Number(balance) / LAMPORTS_PER_SOL}
+                onSuccess={handleWalletModalSuccess}
+            />
         </>
     );
 };
