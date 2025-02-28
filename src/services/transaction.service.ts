@@ -24,13 +24,13 @@ export class TransactionService {
         `${this.BASE_PATH}?${queryParams}`
       );
 
-      // Detailed logging of raw response
-      console.log('=== Transaction Response Details ===');
-      console.log('Full response:', response.data);
-      console.log('Sample transaction:', response.data.data[0]);
-      console.log('Program ID:', response.data.data[0]?.programId);
-      console.log('Instruction details:', response.data.data[0]?.data);
-      console.log('================================');
+      // // Detailed logging of raw response
+      // console.log('=== Transaction Response Details ===');
+      // console.log('Full response:', response.data);
+      // console.log('Sample transaction:', response.data.data[0]);
+      // console.log('Program ID:', response.data.data[0]?.programId);
+      // console.log('Instruction details:', response.data.data[0]?.data);
+      // console.log('================================');
 
       if (!response.data.success) {
         throw new Error("Failed to fetch transactions");

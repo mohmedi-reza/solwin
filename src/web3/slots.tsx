@@ -97,7 +97,7 @@ export const useGameWeb3 = () => {
                 [Buffer.from("slots", "utf-8"), (publicKey as PublicKey).toBuffer()],
                 program.programId
             )
-        console.log("user pda:", userPDA.toString())
+        // console.log("user pda:", userPDA.toString())
         // init user pda Signer: Server
         const txid = await program2.methods.initUserPda().accounts({
             signer: server_wallet,
@@ -127,7 +127,7 @@ export const useGameWeb3 = () => {
             throw `transaction error:   ${error}`
         }
         console.log("Done: ", txID)
-        console.log("Init User PDA Done")
+        // console.log("Init User PDA Done")
     }
 
     /*const getSwapIx = async (user: PublicKey, outputAccount: PublicKey, quote: any) => {

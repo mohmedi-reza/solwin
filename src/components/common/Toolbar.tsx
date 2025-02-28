@@ -12,6 +12,7 @@ import AddressShort from '../AddressShort';
 import Icon from '../icon/icon.component';
 import { IconName } from '../icon/iconPack';
 import WalletModal from '../WalletModal';
+import ThemeChanger from '../ThemeChanger';
 
 // Add new type for balance display
 type BalanceDisplay = 'pda' | 'wallet';
@@ -194,7 +195,7 @@ const Toolbar: React.FC = () => {
                         {/* Logo */}
                         <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                             <Icon name="solana" className="text-5xl text-primary" />
-                            <div>
+                            <div className='hidden md:block'>
                                 <p className="font-bold text-xl p-0">SolWin</p>
                                 <p className="text-sm text-base-content/70 p-0">Solana Casino</p>
                             </div>
@@ -276,7 +277,7 @@ const Toolbar: React.FC = () => {
                                     </div>
 
                                     {/* Deposit/Withdraw Button */}
-                                    <button 
+                                    <button
                                         onClick={() => setIsWalletModalOpen(true)}
                                         className="btn btn-primary btn-sm btn-circle"
                                         title="Deposit/Withdraw"
@@ -354,6 +355,8 @@ const Toolbar: React.FC = () => {
                                     </ul>
                                 )}
                             </div>
+
+                            <ThemeChanger />
                         </div>
                     </div>
                 </div>

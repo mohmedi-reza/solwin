@@ -2,7 +2,7 @@
 
 /* Theme Configuration */
 @plugin "daisyui" {
-  themes: light --default, dark --prefersdark, solwinTheme;
+  themes: light --default, light --prefersdark, abyss;
 }
 
 @plugin "daisyui/theme" {
