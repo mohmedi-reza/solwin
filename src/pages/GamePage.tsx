@@ -105,16 +105,6 @@ const GamePage: React.FC = () => {
     }
   }, [isDrawing]);
 
-  // const handleWalletSuccess = useCallback(async () => {
-  //   if (publicKey && AuthService.isAuthenticated()) {
-  //     try {
-  //       // No need to fetch balance here, as it's handled by useWalletBalance
-  //     } catch (error) {
-  //       console.error('Error refreshing balances:', error);
-  //     }
-  //   }
-  // }, [publicKey]);
-
   const handleStartGame = async () => {
     // If wallet is not connected, show wallet modal
     if (!publicKey) {
@@ -223,7 +213,7 @@ const GamePage: React.FC = () => {
                   {/* Back Button */}
                   <button
                     onClick={goToHomePage}
-                    className="absolute rounded-2xl bg-white btn-soft z-20 left-4 sm:left-6 top-4 sm:top-6 btn btn-square backdrop-blur-sm hover:bg-base-200/80 transition-all"
+                    className="absolute rounded-2xl bg-base-100 btn-soft z-20 left-4 sm:left-6 top-4 sm:top-6 btn btn-square backdrop-blur-sm hover:bg-base-200/80 transition-all"
                   >
                     <Icon name="arrowLeft" className="text-xl sm:text-2xl" />
                   </button>
