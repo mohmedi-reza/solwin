@@ -117,7 +117,7 @@ const GamePage: React.FC = () => {
       toast.error('Insufficient balance to play. First you should Deposit to your account.',);
       return;
     }
-    
+
     // If there was a previous game, start new game with same bet/risk
     if (currentHand.length > 0) {
       handleBetConfirm(bet, risk);

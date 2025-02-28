@@ -66,13 +66,13 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
           Leaderboard
         </h3>
         <div className="tabs tabs-boxed">
-          <button 
+          <button
             className={`tab ${activeTab === 'recent' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('recent')}
           >
             Recent Wins
           </button>
-          <button 
+          <button
             className={`tab ${activeTab === 'top' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('top')}
           >
@@ -85,15 +85,15 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
         {activeTab === 'recent' ? (
           <>
             {recentData.map((winner, index) => (
-              <div 
-                key={`${winner.pdaAddress}-${index}`} 
+              <div
+                key={`${winner.pdaAddress}-${index}`}
                 className="bg-base-100 rounded-lg p-4 hover:bg-base-200 transition-colors animate-slideRight"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="avatar placeholder">
-                      <div className="bg-primary flex items-center justify-center text-white rounded-full p-2">
+                      <div className="bg-primary flex items-center justify-center text-base-100 rounded-full p-2">
                         <Icon className='text-xl' name="userTick" />
                       </div>
                     </div>
@@ -130,7 +130,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
         ) : (
           <>
             {topData.map((player) => (
-              <div 
+              <div
                 key={player.pdaAddress}
                 className="bg-base-100 rounded-lg p-4 hover:bg-base-200 transition-colors"
               >

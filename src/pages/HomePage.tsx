@@ -368,7 +368,7 @@ const HomePage: React.FC = () => {
             {/* Left side with Chainlink VRF info */}
             <div className="flex-1 space-y-4">
               <div className="flex items-center gap-3">
-                <img src="Chainlink-VRF.png" alt="Chainlink VRF" className="w-100 drop-shadow-sm" />
+                <img src="Chainlink-VRF.png" alt="Chainlink VRF" className="w-100 drop-shadow-sm opacity-70" />
                 <h2 className="text-2xl sm:text-3xl font-bold">Provably Fair Gaming</h2>
               </div>
               <p className="text-base-content/80 leading-relaxed">
