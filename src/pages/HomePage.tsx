@@ -42,13 +42,13 @@ const HomePage: React.FC = () => {
     },
     {
       id: 2,
-      title: "RocketPlay",
-      description: "Crash game with real-time multipliers and instant cashouts",
-      status: "Trend",
+      title: "Duel Game",
+      description: "Challenge other players in 1v1 duels with custom stakes",
+      status: "Active",
       image: "cover-2.png",
       stats: {
         minBet: 5,
-        maxWin: "100x",
+        maxWin: "2x",
         players: 856
       }
     },
@@ -58,7 +58,7 @@ const HomePage: React.FC = () => {
       description: "Fast-paced betting game with multipliers",
       status: "Popular",
       image: "cover-6.png",
-      stats: { minBet: 5, maxWin: "25x", players: 645 }
+      stats: { minBet: 0, maxWin: "--", players: 0 }
     },
     {
       id: 4,
@@ -66,7 +66,7 @@ const HomePage: React.FC = () => {
       status: "Trend",
       image: "cover-3.png",
       description: "Mega jackpot with progressive multipliers",
-      stats: { minBet: 20, maxWin: "200x", players: 432 }
+      stats: { minBet: 0, maxWin: "--", players: 0 }
     },
     {
       id: 5,
@@ -74,7 +74,7 @@ const HomePage: React.FC = () => {
       status: "Trend",
       image: "cover-4.png",
       description: "Spin the wheel of fortune",
-      stats: { minBet: 1, maxWin: "20x", players: 890 }
+      stats: { minBet: 0, maxWin: "--", players: 0 }
     },
     {
       id: 6,
@@ -82,7 +82,7 @@ const HomePage: React.FC = () => {
       status: "Popular",
       image: "cover-5.png",
       description: "Classic fortune wheel with bonuses",
-      stats: { minBet: 5, maxWin: "15x", players: 567 }
+      stats: { minBet: 0, maxWin: "--", players: 0 }
     }
   ];
 
@@ -282,17 +282,17 @@ const HomePage: React.FC = () => {
                     <div className="flex items-center gap-3 text-sm flex-wrap">
                       <div className="flex items-center gap-1.5">
                         <Icon name="wallet" className="text-primary" />
-                        <span>${card.stats.minBet}</span>
+                        <span>{card.status === "Active" ? `$${card.stats.minBet}` : "--"}</span>
                       </div>
                       <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
                       <div className="flex items-center gap-1.5">
                         <Icon name="cup" className="text-secondary" />
-                        <span>{card.stats.maxWin}</span>
+                        <span>{card.status === "Active" ? card.stats.maxWin : "--"}</span>
                       </div>
                       <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
                       <div className="flex items-center gap-1.5">
                         <Icon name="user" className="text-accent" />
-                        <span>{card.stats.players}</span>
+                        <span>{card.status === "Active" ? card.stats.players : "--"}</span>
                       </div>
                     </div>
                   </div>
@@ -300,7 +300,7 @@ const HomePage: React.FC = () => {
                   {/* Button */}
                   <div className="mt-4">
                     <button
-                      onClick={() => navigate(`/game?id=${card.id}`)}
+                      onClick={() => navigate(card.id === 2 ? '/duel' : `/game?id=${card.id}`)}
                       disabled={card.status !== "Active"}
                       className="w-full btn btn-primary"
                     >

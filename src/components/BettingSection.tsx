@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { AuthService } from '../services/auth.service';
 import { UserService } from '../services/user.service';
 import Icon from './icon/icon.component';
+import { useSolanaPrice } from '../hooks/useSolanaPrice';
 
 interface BettingSectionProps {
   onClose: () => void;
@@ -14,6 +15,7 @@ interface BettingSectionProps {
 const BettingSection: React.FC<BettingSectionProps> = ({ onClose, onConfirm }) => {
   const { publicKey } = useWallet();
   const { connection } = useConnection();
+  const { convertSolToUsd } = useSolanaPrice();
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [pdaBalance, setPdaBalance] = useState<number | null>(null);
   const [bet, setBet] = useState(0.05);
@@ -124,6 +126,13 @@ const BettingSection: React.FC<BettingSectionProps> = ({ onClose, onConfirm }) =
     }
   };
 
+  const formatUSD = (amount: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
   return (
     <div className="relative">
       <div className="rounded-2xl w-full animate-fadeIn">
@@ -177,15 +186,20 @@ const BettingSection: React.FC<BettingSectionProps> = ({ onClose, onConfirm }) =
                   <span className='text-2xl'>-</span>
                 </button>
                 
-                <input
-                  type="number"
-                  value={bet}
-                  onChange={handleBetChange}
-                  className={`input bg-transparent outline-none focus:outline-none border-none text-center shadow-none w-24 text-xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${error ? 'text-error' : 'text-primary'}`}
-                  min={0.05}
-                  step={0.0001}
-                  max={pdaBalance || 0}
-                />
+                <div className="flex flex-col items-center">
+                  <input
+                    type="number"
+                    value={bet}
+                    onChange={handleBetChange}
+                    className={`input bg-transparent outline-none focus:outline-none border-none text-center shadow-none w-24 text-xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${error ? 'text-error' : 'text-primary'}`}
+                    min={0.05}
+                    step={0.0001}
+                    max={pdaBalance || 0}
+                  />
+                  <span className="text-xs text-base-content/60">
+                    {formatUSD(convertSolToUsd(bet))}
+                  </span>
+                </div>
                 
                 <button
                   onClick={incrementBet}
@@ -204,9 +218,12 @@ const BettingSection: React.FC<BettingSectionProps> = ({ onClose, onConfirm }) =
                       setBet(preset.amount);
                       setSelectedPreset(index);
                     }}
-                    className={`btn btn-xs rounded-lg ${selectedPreset === index 
-                      ? 'btn-primary btn-outline text-primary' 
-                      : 'btn-ghost btn-soft'}`}
+                    className={`btn btn-xs rounded-lg ${
+                      selectedPreset === index 
+                        ? 'btn-primary btn-outline text-primary' 
+                        : 'btn-ghost btn-soft'
+                    }`}
+                    title={`${preset.label} (${formatUSD(convertSolToUsd(preset.amount))})`}
                   >
                     {preset.label}
                   </button>
@@ -270,18 +287,28 @@ const BettingSection: React.FC<BettingSectionProps> = ({ onClose, onConfirm }) =
               <div className="grid grid-cols-1 gap-4">
                 <div className="bg-success/5 p-4 rounded-2xl flex items-center justify-between">
                   <p className="text-sm text-base-content/60">Max Win</p>
-                  <p className="text-xl font-bold text-success">
-                    +{potentialWin.toFixed(4)}
-                    <span className="text-xs ml-1">SOL</span>
-                  </p>
+                  <div className="text-right">
+                    <p className="text-xl font-bold text-success">
+                      +{potentialWin.toFixed(4)}
+                      <span className="text-xs ml-1">SOL</span>
+                    </p>
+                    <p className="text-xs text-success/60">
+                      {formatUSD(convertSolToUsd(potentialWin))}
+                    </p>
+                  </div>
                 </div>
                 
                 <div className="bg-error/5 p-4 rounded-2xl flex items-center justify-between">
                   <p className="text-sm text-base-content/60">Max Loss</p>
-                  <p className="text-xl font-bold text-error">
-                    -{(bet * risk).toFixed(4)}
-                    <span className="text-xs ml-1">SOL</span>
-                  </p>
+                  <div className="text-right">
+                    <p className="text-xl font-bold text-error">
+                      -{(bet * risk).toFixed(4)}
+                      <span className="text-xs ml-1">SOL</span>
+                    </p>
+                    <p className="text-xs text-error/60">
+                      {formatUSD(convertSolToUsd(bet * risk))}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
