@@ -1,0 +1,8 @@
+
+
+
+export const SOLANA_DEFAULT_PRIORITY_FEE = 1_000_000;
+export const SOLANA_MAX_PRIORITY_FEE = 5_000_000;
+
+
+

@@ -26,7 +26,7 @@ function App() {
           closeOnClick
           pauseOnFocusLoss
           draggable
-          theme="dark"
+          theme="light"
           pauseOnHover
         />
         <AppRoutes />

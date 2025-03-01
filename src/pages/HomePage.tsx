@@ -1,6 +1,9 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Icon from "../components/icon/icon.component";
+import WalletModal from "../components/WalletModal";
 
 interface GameCardStats {
   minBet: number;
@@ -19,6 +22,10 @@ interface GameCard {
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const { publicKey } = useWallet();
+  const { connection } = useConnection();
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
   const gameCards: GameCard[] = [
     {
       id: 1,
@@ -34,13 +41,13 @@ const HomePage: React.FC = () => {
     },
     {
       id: 2,
-      title: "RocketPlay",
-      description: "Crash game with real-time multipliers and instant cashouts",
-      status: "Trend",
+      title: "Duel Game",
+      description: "Challenge other players in 1v1 duels with custom stakes",
+      status: "Active",
       image: "cover-2.png",
       stats: {
         minBet: 5,
-        maxWin: "100x",
+        maxWin: "2x",
         players: 856
       }
     },
@@ -85,9 +92,38 @@ const HomePage: React.FC = () => {
       ? gameCards
       : gameCards.filter((card) => card.status === selectedFilter);
 
+  // Add effect to fetch wallet balance
+  useEffect(() => {
+    const fetchAndUpdateBalance = async () => {
+      if (publicKey) {
+        try {
+          const balance = await connection.getBalance(publicKey);
+          setWalletBalance(balance / LAMPORTS_PER_SOL);
+        } catch (error) {
+          console.error('Error refreshing balance:', error);
+        }
+      }
+    };
+
+    // Initial fetch
+    fetchAndUpdateBalance();
+  }, [publicKey, connection]);
+
+  // Add handler for wallet operation success
+  const handleWalletOperationSuccess = async () => {
+    if (publicKey) {
+      try {
+        const balance = await connection.getBalance(publicKey);
+        setWalletBalance(balance / LAMPORTS_PER_SOL);
+      } catch (error) {
+        console.error('Error refreshing balance:', error);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen">
-      <div className="container mx-auto">
+      <div className="container mx-auto space-y-20">
         {/* Hero Banner */}
         <div className="relative mt-4 sm:mt-6 lg:mt-8 h-auto sm:h-[180px] py-4 sm:py-6 lg:py-0 bg-gradient-to-r from-base-200/80 via-base-100/40 to-base-200/80 backdrop-blur-sm rounded-3xl mb-8 border border-base-content/20 shadow-[0_0_15px_rgba(var(--primary),0.15)] hover:shadow-[0_0_20px_rgba(var(--primary),0.2)] transition-shadow overflow-hidden">
           {/* Background Effects */}
@@ -111,7 +147,7 @@ const HomePage: React.FC = () => {
               <div className="space-y-2 sm:space-y-3 lg:space-y-4 max-w-xl text-center sm:text-left">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold drop-shadow-sm">
                   <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-gradient">
-                    RocketBet
+                    SolWin
                   </span>
                   <span className="text-base-content/80 text-lg ml-3 font-normal">
                     Instant Poker Games
@@ -120,15 +156,23 @@ const HomePage: React.FC = () => {
                 <p className="text-base text-base-content/70 backdrop-blur-sm font-medium">
                   Experience the thrill of poker with instant payouts and up to 50x multipliers
                 </p>
-                <Link
-                  to="/game"
-                  className="btn btn-primary gap-2 px-6 group relative hover:scale-105 transition-all shadow-[0_4px_12px_rgba(var(--primary),0.25)] hover:shadow-[0_6px_16px_rgba(var(--primary),0.35)]"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary via-secondary to-primary opacity-0 group-hover:opacity-20 transition-opacity rounded-lg"></div>
-                  <Icon name="game" className="text-xl group-hover:rotate-12 transition-transform" />
-                  <span className="font-bold">Play Now</span>
-                  <div className="absolute -top-1 -right-1 status status-error size-2 animate-ping"></div>
-                </Link>
+                <div className="flex gap-3">
+                  <Link
+                    to="/game"
+                    className="btn btn-primary gap-2 px-6 group relative hover:scale-105 transition-all shadow-[0_4px_12px_rgba(var(--primary),0.25)] hover:shadow-[0_6px_16px_rgba(var(--primary),0.35)]"
+                  >
+                    <Icon name="game" className="text-xl group-hover:rotate-12 transition-transform" />
+                    <span className="font-bold">Play Now</span>
+                  </Link>
+                  <button
+                    onClick={() => setIsWalletModalOpen(true)}
+                    className="btn btn-primary btn-outline gap-2 px-6 group relative hover:scale-105 transition-all"
+                  >
+                    <Icon name="wallet" className="text-xl group-hover:rotate-12 transition-transform" />
+                    <span className="font-bold">Deposit</span>
+                    <span className="absolute -top-1 -right-1 status status-error size-2 animate-ping"></span>
+                  </button>
+                </div>
               </div>
 
               {/* Right Side Stats - Stack on mobile */}
@@ -178,7 +222,7 @@ const HomePage: React.FC = () => {
           {/* Game Cards Grid - Better responsive columns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {filteredCards.map((card) => (
-              <div key={card.id} className="card bg-base-200 shadow-2xl border border-white/15 hover:scale[1.2] rounded-3xl hover:shadow-xl transition-all flex flex-col min-h-[400px]  overflow-hidden">
+              <div key={card.id} className="card bg-base-200 border border-white/15 hover:scale[1.2] rounded-3xl hover:shadow-xl transition-all flex flex-col min-h-[400px]  overflow-hidden">
                 {/* Game Image - Simplified structure */}
                 <div className="relative h-36 sm:h-40 lg:h-48">
                   {/* Base gradient overlay */}
@@ -189,8 +233,8 @@ const HomePage: React.FC = () => {
 
                   {/* Dynamic accent overlay based on status */}
                   <div className={`absolute inset-0 ${card.status === "Active" ? "bg-success/5" :
-                      card.status === "Trend" ? "bg-secondary/5" :
-                        "bg-accent/5"
+                    card.status === "Trend" ? "bg-secondary/5" :
+                      "bg-accent/5"
                     } mix-blend-overlay`}></div>
 
                   <img
@@ -208,11 +252,7 @@ const HomePage: React.FC = () => {
                       </span>
                     </div>
                   ) : (
-                    <div className="absolute inset-0 z-20 flex items-center justify-center">
-                      <div className="bg-accent/20 backdrop-blur-sm px-4 py-2 rounded-lg shadow-xl border border-base-content/10">
-                        <span className="text-sm text-base-content">Under Development</span>
-                      </div>
-                    </div>
+                    <div className="absolute inset-0 bg-base-100/50 backdrop-blur-[2px] z-10"></div>
                   )}
                 </div>
 
@@ -222,9 +262,9 @@ const HomePage: React.FC = () => {
                     {/* Title and status */}
                     <div className="flex justify-between items-start gap-2">
                       <h3 className="text-lg sm:text-xl font-bold">{card.title}</h3>
-                      <span className={`badge ${card.status === "Active" ? "badge-success" :
-                          card.status === "Trend" ? "badge-secondary" :
-                            "badge-accent"
+                      <span className={`badge ${card.status === "Active"
+                        ? "badge-success"
+                        : "badge-outline opacity-50 bg-base-200"
                         }`}>
                         {card.status}
                       </span>
@@ -239,17 +279,17 @@ const HomePage: React.FC = () => {
                     <div className="flex items-center gap-3 text-sm flex-wrap">
                       <div className="flex items-center gap-1.5">
                         <Icon name="wallet" className="text-primary" />
-                        <span>${card.stats.minBet}</span>
+                        <span>{card.status === "Active" ? `$${card.stats.minBet}` : "--"}</span>
                       </div>
                       <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
                       <div className="flex items-center gap-1.5">
                         <Icon name="cup" className="text-secondary" />
-                        <span>{card.stats.maxWin}</span>
+                        <span>{card.status === "Active" ? card.stats.maxWin : "--"}</span>
                       </div>
                       <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
                       <div className="flex items-center gap-1.5">
                         <Icon name="user" className="text-accent" />
-                        <span>{card.stats.players}</span>
+                        <span>{card.status === "Active" ? card.stats.players : "--"}</span>
                       </div>
                     </div>
                   </div>
@@ -257,7 +297,7 @@ const HomePage: React.FC = () => {
                   {/* Button */}
                   <div className="mt-4">
                     <button
-                      onClick={() => navigate(`/game?id=${card.id}`)}
+                      onClick={() => navigate(card.id === 2 ? '/duel' : `/game?id=${card.id}`)}
                       disabled={card.status !== "Active"}
                       className="w-full btn btn-primary"
                     >
@@ -273,7 +313,177 @@ const HomePage: React.FC = () => {
             ))}
           </div>
         </div>
+
+        {/* How It Works Section */}
+        <div className="w-full bg-base-200/50 rounded-3xl p-6 sm:p-8 lg:p-10 mt-8 border border-base-content/10">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2">How It Works</h2>
+            <p className="text-base-content/70">Start playing in three simple steps</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Step 1 */}
+            <div className="card bg-base-100/50 hover:bg-base-100/80 transition-colors border border-base-content/10">
+              <div className="card-body items-center text-center relative">
+                {/* <div className="badge badge-primary absolute -top-3">Step 1</div> */}
+                <Icon name="wallet" className="text-4xl text-primary mb-4" />
+                <h3 className="card-title">Connect Wallet</h3>
+                <p className="text-base-content/70">Connect your Solana wallet with just one click</p>
+                <div className="card-actions justify-end mt-4">
+
+                </div>
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="card bg-base-100/50 hover:bg-base-100/80 transition-colors border border-base-content/10">
+              <div className="card-body items-center text-center relative">
+                {/* <div className="badge badge-primary absolute -top-3">Step 2</div> */}
+                <Icon name="solana" className="text-4xl text-primary mb-4" />
+                <h3 className="card-title">Deposit SOL</h3>
+                <p className="text-base-content/70">Fund your account with SOL tokens instantly</p>
+                <div className="card-actions justify-end mt-4">
+
+                </div>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="card bg-base-100/50 hover:bg-base-100/80 transition-colors border border-base-content/10">
+              <div className="card-body items-center text-center relative">
+                {/* <div className="badge badge-primary absolute -top-3">Step 3</div> */}
+                <Icon name="game" className="text-4xl text-primary mb-4" />
+                <h3 className="card-title">Start Playing</h3>
+                <p className="text-base-content/70">Choose your game and start winning</p>
+                <div className="card-actions justify-end mt-4">
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        {/* Trust Section */}
+        <div className="w-full  bg-base-200/50 rounded-3xl p-6 sm:p-8 lg:p-10 mt-8 border border-base-content/10">
+          <div className="flex flex-col lg:flex-row gap-8 items-center">
+            {/* Left side with Switchboard info */}
+            <div className="flex-2 space-y-4">
+              <div className="flex flex-col items-start gap-3">
+                <Icon  name="switchboardSolana" className="text-[300px] h-fit text-primary mb-4" />
+                {/* <img src="switchboard-solana.png" alt="Switchboard Solana" className="w-100 drop-shadow-sm opacity-70" /> */}
+                {/* <h2 className="text-2xl sm:text-3xl font-bold">Provably Fair Gaming</h2> */}
+              </div>
+              <p className="text-base-content/80 leading-relaxed">
+                SolWin leverages Switchboard's decentralized oracle network on Solana to ensure complete fairness in all games.
+                Our integration with Switchboard provides secure and verifiable randomness that guarantees:
+              </p>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2">
+                  <Icon name="tickCircle" className="text-success" />
+                  <span>Decentralized random number generation through Switchboard's oracle network</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Icon name="tickCircle" className="text-success" />
+                  <span>Transparent and verifiable game outcomes on Solana blockchain</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Icon name="tickCircle" className="text-success" />
+                  <span>High-performance randomness optimized for Solana's speed</span>
+                </li>
+              </ul>
+              <div className="flex flex-wrap gap-3 mt-6">
+                <a 
+                  href="https://switchboard.xyz/solana" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="btn btn-primary gap-2"
+                >
+                  <Icon name="link" className="text-lg" />
+                  Read More
+                </a>
+           
+              </div>
+            </div>
+
+            {/* Right side with stats */}
+            <div className="grid flex-1 grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-4 w-full lg:w-auto">
+              <div className="stat bg-base-300/50 rounded-2xl p-4 flex flex-col items-center justify-center">
+                <Icon name="game" className="text-4xl text-primary mb-2" />
+                <div className="font-semibold text-base-content/80">Instant Games</div>
+                <div className="text-sm text-base-content/60">Fast & Secure</div>
+              </div>
+              <div className="stat bg-base-300/50 rounded-2xl p-4 flex flex-col items-center justify-center">
+                <Icon name="solana" className="text-4xl text-secondary mb-2" />
+                <div className="font-semibold text-base-content/80">Solana Network</div>
+                <div className="text-sm text-base-content/60">Lightning Fast</div>
+              </div>
+              <div className="stat bg-base-300/50 rounded-2xl p-4 flex flex-col items-center justify-center">
+                <Icon name="searchNormal" className="text-4xl text-success mb-2" />
+                <div className="font-semibold text-base-content/80">Traceable</div>
+                <div className="text-sm text-base-content/60">Provably Fair</div>
+              </div>
+              <div className="stat bg-base-300/50 rounded-2xl p-4 flex flex-col items-center justify-center">
+                <Icon name="shield" className="text-4xl text-success mb-2" />
+                <div className="font-semibold text-base-content/80">Secure Platform</div>
+                <div className="text-sm text-base-content/60">Fully Audited</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Features Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 mb-8">
+          <div className="card bg-base-200 border border-base-content/10">
+            <div className="card-body">
+              <Icon name="shield" className="text-3xl text-primary mb-2" />
+              <h3 className="card-title">Secure & Fast</h3>
+              <p className="text-base-content/70">
+                Built on Solana for lightning-fast transactions and military-grade security
+              </p>
+            </div>
+          </div>
+          <div className="card bg-base-200 border border-base-content/10">
+            <div className="card-body">
+              <Icon name="wallet" className="text-3xl text-secondary mb-2" />
+              <h3 className="card-title">Instant Payouts</h3>
+              <p className="text-base-content/70">
+                Receive your winnings instantly in your wallet with minimal fees
+              </p>
+            </div>
+          </div>
+          <div className="card bg-base-200 border border-base-content/10">
+            <div className="card-body">
+              <Icon name="call" className="text-3xl text-accent mb-2" />
+              <h3 className="card-title">24/7 Support</h3>
+              <p className="text-base-content/70">
+                Our support team is always available to help with any questions
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Newsletter Section */}
+        <div className="w-full space-y-20 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-3xl p-6 sm:p-8 lg:p-10 mt-8 mb-8 border border-base-content/10">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+            <div className="text-center lg:text-left">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2">Stay Updated</h2>
+              <p className="text-base-content/70">Get the latest news and special offers directly to your inbox</p>
+            </div>
+            <div className="flex gap-2 w-full lg:w-auto">
+              <input type="email" placeholder="Enter your email" className="input input-bordered w-full lg:w-80" />
+              <button className="btn btn-primary">Subscribe</button>
+            </div>
+          </div>
+        </div>
+
       </div>
+
+      {/* Add WalletModal */}
+      <WalletModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        walletBalance={walletBalance}
+        onSuccess={handleWalletOperationSuccess}
+      />
     </div>
   );
 };

@@ -1,13 +1,17 @@
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useInView } from 'react-intersection-observer';
 import { useNavigate } from 'react-router-dom';
-import BettingModal from '../components/BettingModal';
+import { toast } from 'react-toastify';
+import BettingSection from '../components/BettingSection';
 import Icon from '../components/icon/icon.component';
-import { PokerGame } from '../services/poker.service';
+import Leaderboard from '../components/Leaderboard';
+import { useLeaderboard, useTopPlayers } from '../hooks/useLeaderboard';
+import { QUERY_KEYS, useWalletBalance } from '../hooks/useWalletBalance';
+import { GameService } from '../services/game.service';
 import { Card, HandResult } from '../types/poker.interface';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-
-const game = new PokerGame();
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 
 interface ShufflingCard extends Card {
   key: number;
@@ -16,46 +20,54 @@ interface ShufflingCard extends Card {
 const GamePage: React.FC = () => {
   const navigate = useNavigate();
   const { publicKey } = useWallet();
-  const { connection } = useConnection();
   const [showBettingModal, setShowBettingModal] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentHand, setCurrentHand] = useState<Card[]>([]);
   const [handResult, setHandResult] = useState<HandResult | null>(null);
-  const [balance, setBalance] = useState(1000);
   const [bet, setBet] = useState(10);
   const [risk, setRisk] = useState(1.0);
   const [shufflingCards, setShufflingCards] = useState<ShufflingCard[]>([]);
-  const [recentWinners] = useState([
-    { name: 'Player1', hand: 'Royal Flush', amount: 2500 },
-    { name: 'Player2', hand: 'Four of a Kind', amount: 800 },
-    { name: 'Player3', hand: 'Straight Flush', amount: 1200 },
-  ]);
   const [isRulesOpen, setIsRulesOpen] = useState(true);
-  const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   const rulesRef = useRef<HTMLDivElement>(null);
+
+  const { data: walletData } = useWalletBalance();
+  const {
+    data: leaderboardPages,
+    fetchNextPage: fetchNextLeaderboard,
+    hasNextPage: hasNextLeaderboard,
+    isFetchingNextPage: isFetchingNextLeaderboard
+  } = useLeaderboard();
+  const queryClient = useQueryClient();
+
+  const { ref: leaderboardRef, inView: leaderboardInView } = useInView();
+
+  const {
+    data: topPlayersPages,
+    fetchNextPage: fetchNextTopPlayers,
+    hasNextPage: hasNextTopPlayers,
+    isFetchingNextPage: isFetchingNextTopPlayers
+  } = useTopPlayers();
+
+  const { ref: topPlayersRef, inView: topPlayersInView } = useInView();
+
+  const { setVisible } = useWalletModal();
+
+  useEffect(() => {
+    if (leaderboardInView && hasNextLeaderboard && !isFetchingNextLeaderboard) {
+      fetchNextLeaderboard();
+    }
+  }, [leaderboardInView, hasNextLeaderboard, isFetchingNextLeaderboard, fetchNextLeaderboard]);
+
+  useEffect(() => {
+    if (topPlayersInView && hasNextTopPlayers && !isFetchingNextTopPlayers) {
+      fetchNextTopPlayers();
+    }
+  }, [topPlayersInView, hasNextTopPlayers, isFetchingNextTopPlayers, fetchNextTopPlayers]);
 
   const scrollToRules = () => {
     rulesRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  useEffect(() => {
-    const getBalance = async () => {
-      if (publicKey) {
-        try {
-          const balance = await connection.getBalance(publicKey);
-          setWalletBalance(balance / LAMPORTS_PER_SOL);
-        } catch (error) {
-          console.error('Error fetching balance:', error);
-        }
-      }
-    };
-
-    getBalance();
-    const intervalId = setInterval(getBalance, 20000);
-
-    return () => clearInterval(intervalId);
-  }, [connection, publicKey]);
 
   useEffect(() => {
     if (isDrawing) {
@@ -93,32 +105,73 @@ const GamePage: React.FC = () => {
     }
   }, [isDrawing]);
 
-  const handleStartGame = () => {
-    setShowBettingModal(true);
-  };
-
-  const handleBetConfirm = useCallback((newBet: number, newRisk: number) => {
-    if (!walletBalance || newBet > walletBalance) {
-      // Show error toast or message
+  const handleStartGame = async () => {
+    // If wallet is not connected, show wallet modal
+    if (!publicKey) {
+      setVisible(true);
       return;
     }
 
-    setShowBettingModal(false);
-    setIsDrawing(true);
-    setBet(newBet);
-    setRisk(newRisk);
+    // Existing logic for connected wallet
+    if (!walletData?.balance || walletData.balance < 0.1) {
+      toast.error('Insufficient balance to play. First you should Deposit to your account.',);
+      return;
+    }
 
-    setTimeout(() => {
-      const hand = game.drawHand();
-      const result = game.evaluateHand(hand);
-      const winnings = game.calculateWinnings(newBet, newRisk, result);
+    // If there was a previous game, start new game with same bet/risk
+    if (currentHand.length > 0) {
+      handleBetConfirm(bet, risk);
+    } else {
+      // First game - show betting modal
+      setShowBettingModal(true);
+    }
+  };
 
+  const handleBetConfirm = useCallback(async (newBet: number, newRisk: number) => {
+    try {
+      const formattedBet = Number(newBet.toFixed(4));
+      setBet(formattedBet);
+      setRisk(newRisk);
+      setIsDrawing(true);
+
+      const gameResult = await GameService.createNewGame(formattedBet, newRisk);
+
+      setTimeout(async () => {
+        setIsDrawing(false);
+        setCurrentHand(gameResult.hand);
+        setHandResult(gameResult.result);
+
+        // Invalidate and force refetch all relevant queries
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [QUERY_KEYS.WALLET_BALANCE],
+            refetchType: 'all'
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [QUERY_KEYS.GAME_HISTORY],
+            refetchType: 'all'
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [QUERY_KEYS.USER_PROFILE],
+            refetchType: 'all'
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [QUERY_KEYS.LEADERBOARD],
+            refetchType: 'all'
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [QUERY_KEYS.TRANSACTIONS],
+            refetchType: 'all'
+          })
+        ]);
+      }, 5000);
+
+    } catch (error) {
+      console.error('Game error:', error);
       setIsDrawing(false);
-      setCurrentHand(hand);
-      setHandResult(result);
-      setBalance(prev => prev + winnings);
-    }, 5000);
-  }, [walletBalance]);
+      toast.error('Failed to play game. Please try again.');
+    }
+  }, [queryClient]);
 
   const handleBack = useCallback(() => {
     setCurrentHand([]);
@@ -133,78 +186,123 @@ const GamePage: React.FC = () => {
 
   const renderReadyToPlay = () => {
     return (
-      <div className=" min-h-[calc(100vh-5rem)] flex flex-col justify-start  bg-base-100">
+      <div className="min-h-[calc(100vh-5rem)] flex flex-col justify-start bg-base-100">
         <div className="relative w-full max-w-6xl space-y-12">
-          {/* Hero Section with CTA */}
-          <div className="relative py-8 sm:py-12 md:py-16 px-4 sm:px-6 md:px-8 rounded-3xl overflow-hidden">
-            {/* Back Button */}
-            <button
-              onClick={goToHomePage}
-              className="absolute rounded-2xl btn-soft z-50 left-4 sm:left-6 top-4 sm:top-6 btn btn-square backdrop-blur-sm hover:bg-base-200/80 transition-all"
-            >
-              <Icon name="arrowLeft" className="text-xl sm:text-2xl" />
-            </button>
+          {/* Show either Hero Section or Betting Interface */}
+          <div className="relative py-6 sm:py-12 md:py-8 px-4 sm:px-6 md:px-8 rounded-3xl border border-base-300 overflow-hidden">
+            {/* Background Effects - Different based on view */}
+            {!showBettingModal ? (
+              <>
+                <div className="absolute inset-0 z-0 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10"></div>
+                <div className="absolute inset-0 z-0 bg-[url('/assets/pattern.png')] opacity-5"></div>
+                <div className="absolute -top-24 -right-24 z-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute -bottom-24 -left-24 z-0 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+              </>
+            ) : (
+              <>
+                <div className="absolute inset-0 z-0 bg-gradient-to-b from-white/5 to-base-200/50"></div>
+                <div className="absolute inset-0 z-0 bg-[url('/assets/pattern.png')] opacity-[0.02]"></div>
+              </>
+            )}
 
-            {/* Background Effects */}
-            <div className="absolute inset-0 z-0 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10"></div>
-            <div className="absolute inset-0 z-0 bg-[url('/assets/pattern.png')] opacity-5"></div>
-            <div className="absolute -top-24 -right-24 z-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute -bottom-24 -left-24 z-0 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-
-            <div className="relative z-10 text-center space-y-4 sm:space-y-6 md:space-y-8">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mt-16">
-                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  Ready to Test Your Luck?
-                </span>
-              </h1>
-              <p className="text-lg sm:text-xl text-base-content/60 max-w-2xl mx-auto">
-                Place your bet and try to win big with the best poker hands!
-              </p>
-
-              {/* Main CTA */}
-              <div className="flex flex-col items-center gap-6 mt-8">
-                <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-primary via-secondary to-primary rounded-2xl blur-lg group-hover:blur-xl transition-all"></div>
+            {/* Content */}
+            <div className="">
+              {!showBettingModal ? (
+                /* Hero Section with CTA */
+                <div className="text-center space-y-4 sm:space-y-6 md:space-y-8">
+                  {/* Back Button */}
                   <button
-                    onClick={handleStartGame}
-                    className="relative text-nowrap btn btn-primary btn-lg text-xl px-4 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
+                    onClick={goToHomePage}
+                    className="absolute rounded-2xl bg-base-100 btn-soft z-20 left-4 sm:left-6 top-4 sm:top-6 btn btn-square backdrop-blur-sm hover:bg-base-200/80 transition-all"
                   >
-                    <Icon name="game" className="text-3xl" />
-                    Place Your Bet & Play Now
-                    <div className="absolute top-0 right-0 -mt-2 -mr-2">
-                      <span className="relative flex h-4 w-4">
-                        <span className="animate-ping absolute inline-flex status status-error size-3"></span>
-                      </span>
-                    </div>
+                    <Icon name="arrowLeft" className="text-xl sm:text-2xl" />
                   </button>
-                </div>
 
-                <div className="flex items-center gap-4 text-base-content/60">
-                  <div className="flex items-center gap-2">
-                    <Icon name="wallet" className="text-xl" />
-                    Min Bet: $10
-                  </div>
-                  <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
-                  <div className="flex items-center gap-2">
-                    <Icon name="cup" className="text-xl" />
-                    Max Win: 50x
-                  </div>
-                  <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
-                  <div className="flex items-center gap-2">
-                    <Icon name="cloudLightning" className="text-xl" />
-                    Instant Payouts
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mt-16">
+                    <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                      Ready to Test Your Luck?
+                    </span>
+                  </h1>
+                  <p className="text-lg sm:text-xl text-base-content/60 max-w-2xl mx-auto">
+                    Place your bet and try to win big with the best poker hands!
+                  </p>
+
+                  {/* Main CTA */}
+                  <div className="flex flex-col items-center gap-6 mt-8">
+                    <div className="relative group">
+                      <div className="absolute -inset-1 bg-gradient-to-r from-primary via-secondary to-primary rounded-2xl blur-lg group-hover:blur-xl transition-all"></div>
+                      <button
+                        onClick={handleStartGame}
+                        className="relative text-nowrap btn btn-primary btn-lg text-xl px-4 py-8 rounded-xl gap-4 group-hover:scale-105 transition-transform duration-300"
+                      >
+                        {!publicKey ? (
+                          <>
+                            <Icon name="wallet" className="text-3xl" />
+                            Connect Your Wallet
+                            <div className="absolute top-0 right-0 -mt-2 -mr-2">
+                              <span className="relative flex h-4 w-4">
+                                <span className="animate-ping absolute inline-flex status status-error size-3"></span>
+                              </span>
+                            </div>
+                          </>
+                        ) : !walletData?.balance || walletData.balance < 0.1 ? (
+                          <>
+                            <Icon name="wallet" className="text-3xl" />
+                            Deposit to Start Playing
+                            <div className="absolute top-0 right-0 -mt-2 -mr-2">
+                              <span className="relative flex h-4 w-4">
+                                <span className="animate-ping absolute inline-flex status status-error size-3"></span>
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <Icon name="game" className="text-3xl" />
+                            Place Your Bet & Play Now
+                            <div className="absolute top-0 right-0 -mt-2 -mr-2">
+                              <span className="relative flex h-4 w-4">
+                                <span className="animate-ping absolute inline-flex status status-error size-3"></span>
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-base-content/60">
+                      <div className="flex items-center gap-2">
+                        <Icon name="wallet" className="text-xl" />
+                        Min Bet: $10
+                      </div>
+                      <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
+                      <div className="flex items-center gap-2">
+                        <Icon name="cup" className="text-xl" />
+                        Max Win: 50x
+                      </div>
+                      <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
+                      <div className="flex items-center gap-2">
+                        <Icon name="cloudLightning" className="text-xl" />
+                        Instant Payouts
+                      </div>
+                    </div>
+
+                    {/* Learn More Button */}
+                    <button
+                      onClick={scrollToRules}
+                      className="btn btn-outline gap-2 text-base-content/60 hover:text-primary transition-colors"
+                    >
+                      Learn More
+                      <Icon name="arrowBottom" className="text-lg animate-bounce" />
+                    </button>
                   </div>
                 </div>
-
-                {/* Learn More Button */}
-                <button
-                  onClick={scrollToRules}
-                  className="btn btn-outline gap-2 text-base-content/60 hover:text-primary transition-colors"
-                >
-                  Learn More
-                  <Icon name="arrowBottom" className="text-lg animate-bounce" />
-                </button>
-              </div>
+              ) : (
+                /* Betting Interface */
+                <BettingSection
+                  onClose={() => setShowBettingModal(false)}
+                  onConfirm={handleBetConfirm}
+                />
+              )}
             </div>
           </div>
 
@@ -217,7 +315,7 @@ const GamePage: React.FC = () => {
               <div className="stat-title">Your Balance</div>
               {publicKey ? (
                 <>
-                  <div className="stat-value text-primary">{walletBalance?.toFixed(2) || '0'} SOL</div>
+                  <div className="stat-value text-primary">{(walletData?.balance || 0).toFixed(4)} SOL</div>
                   <div className="stat-desc">Ready to bet</div>
                 </>
               ) : (
@@ -269,11 +367,11 @@ const GamePage: React.FC = () => {
                 <div className="text-2xl font-bold text-primary">50x</div>
                 <p className="text-base-content/60 text-sm">Ace through 10, same suit</p>
                 <div className="mt-2 flex -space-x-4">
-                  <img src="/assets/Hearts-01.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 " />
-                  <img src="/assets/Hearts-13.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Hearts-12.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Hearts-11.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Hearts-10.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-01.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 " />
+                  <img src="/assets/Hearts-13.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-12.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-11.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-10.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
                 </div>
               </div>
             </div>
@@ -283,11 +381,11 @@ const GamePage: React.FC = () => {
                 <div className="text-2xl font-bold text-primary">10x</div>
                 <p className="text-base-content/60 text-sm">Five consecutive cards, same suit</p>
                 <div className="mt-2 flex -space-x-4">
-                  <img src="/assets/Spades-09.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 " />
-                  <img src="/assets/Spades-08.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Spades-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Spades-06.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Spades-05.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-09.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 " />
+                  <img src="/assets/Spades-08.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-07.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-06.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-05.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
                 </div>
               </div>
             </div>
@@ -297,11 +395,11 @@ const GamePage: React.FC = () => {
                 <div className="text-2xl font-bold text-primary">5x</div>
                 <p className="text-base-content/60 text-sm">Four cards of same rank</p>
                 <div className="mt-2 flex -space-x-4">
-                  <img src="/assets/Hearts-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 " />
-                  <img src="/assets/Diamonds-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Clubs-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Spades-07.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Hearts-02.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px] opacity-50" />
+                  <img src="/assets/Hearts-07.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 " />
+                  <img src="/assets/Diamonds-07.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Clubs-07.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-07.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-02.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
                 </div>
               </div>
             </div>
@@ -311,41 +409,27 @@ const GamePage: React.FC = () => {
                 <div className="text-2xl font-bold text-primary">4x</div>
                 <p className="text-base-content/60 text-sm">Three of a kind with a pair</p>
                 <div className="mt-2 flex -space-x-4">
-                  <img src="/assets/Hearts-04.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 " />
-                  <img src="/assets/Diamonds-04.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Clubs-04.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Hearts-09.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
-                  <img src="/assets/Spades-09.png" className="w-15 h-20 rounded bg-amber-300 shadow-2xl shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-04.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 " />
+                  <img src="/assets/Diamonds-04.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Clubs-04.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Hearts-09.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
+                  <img src="/assets/Spades-09.png" className="w-15 h-20 rounded bg-white shadow-xs shadow-black border border-white/20 -translate-x-[20px]" />
                 </div>
               </div>
             </div>
           </div>
 
           {/* Recent Winners */}
-          <div className="bg-base-200 rounded-xl p-6">
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <Icon name="cup" className="text-primary text-2xl" />
-              Recent Big Wins
-            </h3>
-            <div className="space-y-3">
-              {recentWinners.map((winner, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-base-100 rounded-lg animate-slideRight" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <div className="flex items-center gap-2">
-                    <div className="avatar placeholder">
-                      <div className="bg-primary text-white rounded-full w-8">
-                        <span className="text-xs">{winner.name.charAt(0)}</span>
-                      </div>
-                    </div>
-                    <span className="font-semibold">{winner.name}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-base-content/60">{winner.hand}</div>
-                    <div className="text-success font-bold">+${winner.amount}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <Leaderboard
+            recentData={leaderboardPages?.pages.flatMap(page => page.data) || []}
+            topData={topPlayersPages?.pages.flatMap(page => page.data) || []}
+            isLoadingRecent={isFetchingNextLeaderboard}
+            isLoadingTop={isFetchingNextTopPlayers}
+            hasMoreRecent={hasNextLeaderboard}
+            hasMoreTop={hasNextTopPlayers}
+            recentRef={leaderboardRef}
+            topRef={topPlayersRef}
+          />
 
           {/* Game Rules Collapse */}
           <div ref={rulesRef} className="bg-base-200 rounded-xl overflow-hidden">
@@ -474,9 +558,7 @@ const GamePage: React.FC = () => {
 
   return (
     <div className="min-h-[calc(100vh-5rem)] flex flex-col">
-      <div className="w-full max-w-6xl mx-auto  flex-1 flex flex-col">
-        {/* Balance Header */}
-
+      <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col">
         {/* Ready to Play */}
         {!currentHand.length && !isDrawing && renderReadyToPlay()}
 
@@ -574,7 +656,7 @@ const GamePage: React.FC = () => {
 
         {/* Final Hand Display */}
         {currentHand.length > 0 && !isDrawing && (
-          <div className="flex-1 flex flex-col items-center justify-center space-y-12 ">
+          <div className="flex-1 flex flex-col items-center justify-center space-y-12">
             {/* Result Hero Section */}
             {handResult && (
               <div className="relative w-full max-w-4xl mx-auto bg-base-200 rounded-3xl p-2 py-4 md:p-8 overflow-hidden">
@@ -598,37 +680,54 @@ const GamePage: React.FC = () => {
 
                   {handResult.multiplier > 0 ? (
                     <div className="space-y-4">
-                      <div className="flex items-center justify-center gap-3">
-                        <span className='text-4xl'>🤩</span>
-                        <span className="text-3xl font-bold text-success">
-                          You Won ${(handResult.multiplier * bet * (1 + risk)).toFixed(2)}!
-                        </span>
-                      </div>
-                      <div className="stats bg-base-100 shadow inline-flex">
-                        <div className="stat">
-                          <div className="stat-title">Multiplier</div>
-                          <div className="stat-value text-success">{handResult.multiplier}x</div>
-                        </div>
-                        <div className="stat">
-                          <div className="stat-title">Risk Level</div>
-                          <div className="stat-value text-primary">{risk}x</div>
-                        </div>
-                        <div className="stat">
-                          <div className="stat-title">Total Bet</div>
-                          <div className="stat-value">${bet}</div>
+                      <div className="flex-col md:flex-row items-center justify-center gap-3">
+                        <p className='text-4xl'>🤩</p>
+                        <div className="stats bg-base-100/50 backdrop-blur-sm shadow inline-flex mt-5">
+                          <div className="stat px-6">
+                            <div className="stat-title">Bet Amount</div>
+                            <div className="stat-value text-base">{bet.toFixed(3)} SOL</div>
+                          </div>
+                          <div className="stat px-6">
+                            <div className="stat-title">Multiplier</div>
+                            <div className="stat-value text-success text-base">
+                              {handResult.multiplier}x
+                            </div>
+                          </div>
+                          <div className="stat px-6">
+                            <div className="stat-title">Risk Level</div>
+                            <div className="stat-value text-primary text-base">{risk}x</div>
+                          </div>
+                          <div className="stat px-6">
+                            <div className="stat-title">Net Win</div>
+                            <div className="stat-value text-success text-base">
+                              +{(handResult.multiplier * bet * (1 + risk) - bet).toFixed(3)} SOL
+                            </div>
+                            <div className="stat-desc">
+                              Total: {(handResult.multiplier * bet * (1 + risk)).toFixed(3)} SOL
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <div className="flex items-center justify-center gap-3">
-                        <span className='text-4xl'>😥</span>
-                        <span className="text-3xl text-start font-bold text-error">
-                          Better luck next time!
-                        </span>
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <p className='text-4xl'>😥</p>
+                        <div className="stats bg-base-100/50 backdrop-blur-sm shadow inline-flex mt-5">
+                          <div className="stat px-6">
+                            <div className="stat-title">Bet Amount</div>
+                            <div className="stat-value text-error text-base">
+                              -{bet.toFixed(3)} SOL
+                            </div>
+                          </div>
+                          <div className="stat px-6">
+                            <div className="stat-title">Risk Level</div>
+                            <div className="stat-value text-base">{risk}x</div>
+                          </div>
+                        </div>
                       </div>
                       <p className="text-base-content/60">
-                        You lost ${bet}. Try again with a different strategy!
+                        Better luck next time! Try another hand.
                       </p>
                     </div>
                   )}
@@ -686,35 +785,31 @@ const GamePage: React.FC = () => {
 
               </div>
 
-              <div className="stats-vertical md:stats bg-base-200 shadow">
-                <div className="stat">
+              <div className="stats-vertical md:stats bg-base-200 shadow text-sm sm:text-base">
+                <div className="stat px-3 sm:px-6">
                   <div className="stat-figure text-primary">
-                    <Icon name="wallet" className="text-3xl" />
+                    <Icon name="wallet" className="text-2xl sm:text-3xl" />
                   </div>
-                  <div className="stat-title">Current Balance</div>
-                  <div className="stat-value text-primary">${balance}</div>
-                  <div className="stat-desc">Updated just now</div>
+                  <div className="stat-title text-xs sm:text-sm">Game Balance</div>
+                  <div className="stat-value text-primary text-lg sm:text-2xl whitespace-nowrap">
+                    {(walletData?.balance || 0).toFixed(5)} SOL
+                  </div>
+                  <div className="stat-desc text-xs">Updated just now</div>
                 </div>
-                <div className="stat">
+                <div className="stat px-3 sm:px-6">
                   <div className="stat-figure text-secondary">
-                    <Icon name="game" className="text-3xl" />
+                    <Icon name="game" className="text-2xl sm:text-3xl" />
                   </div>
-                  <div className="stat-title">Last Bet</div>
-                  <div className="stat-value">${bet}</div>
-                  <div className="stat-desc">Risk: {risk}x</div>
+                  <div className="stat-title text-xs sm:text-sm">Last Bet</div>
+                  <div className="stat-value text-lg sm:text-2xl whitespace-nowrap">
+                    {bet.toFixed(5)} SOL
+                  </div>
+                  <div className="stat-desc text-xs">Risk: {risk}x</div>
                 </div>
               </div>
             </div>
           </div>
         )}
-
-        {/* Betting Modal */}
-        <BettingModal
-          isOpen={showBettingModal}
-          onClose={() => setShowBettingModal(false)}
-          onConfirm={handleBetConfirm}
-          balance={balance}
-        />
       </div>
     </div>
   );
