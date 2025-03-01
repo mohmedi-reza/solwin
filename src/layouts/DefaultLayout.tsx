@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import Toolbar from '../components/common/Toolbar';
 
 const DefaultLayout: React.FC = () => {
@@ -16,12 +16,12 @@ const DefaultLayout: React.FC = () => {
                 <div className="container mx-auto px-4 py-6">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                         <div className="text-sm text-base-content/60">
-                            © 2024 RocketBet. All rights reserved.
+                            © 2024 BeStuidos. All rights reserved.
                         </div>
                         <div className="flex items-center gap-4 text-sm">
-                            <a href="#" className="hover:text-primary transition-colors">Terms</a>
-                            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-                            <a href="#" className="hover:text-primary transition-colors">Support</a>
+                            <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
+                            <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
+                            <Link to="/contact" className="hover:text-primary transition-colors">Contact</Link>
                         </div>
                     </div>
                 </div>
