@@ -362,56 +362,69 @@ const HomePage: React.FC = () => {
           </div>
 
         </div>
-        {/* Trust Section - Add this before Game List */}
-        <div className="w-full bg-base-200/50 rounded-3xl p-6 sm:p-8 lg:p-10 mt-8 border border-base-content/10">
+        {/* Trust Section */}
+        <div className="w-full  bg-base-200/50 rounded-3xl p-6 sm:p-8 lg:p-10 mt-8 border border-base-content/10">
           <div className="flex flex-col lg:flex-row gap-8 items-center">
-            {/* Left side with Chainlink VRF info */}
-            <div className="flex-1 space-y-4">
-              <div className="flex items-center gap-3">
-                <img src="Chainlink-VRF.png" alt="Chainlink VRF" className="w-100 drop-shadow-sm opacity-70" />
-                <h2 className="text-2xl sm:text-3xl font-bold">Provably Fair Gaming</h2>
+            {/* Left side with Switchboard info */}
+            <div className="flex-2 space-y-4">
+              <div className="flex flex-col items-start gap-3">
+                <Icon  name="switchboardSolana" className="text-[300px] h-fit text-primary mb-4" />
+                {/* <img src="switchboard-solana.png" alt="Switchboard Solana" className="w-100 drop-shadow-sm opacity-70" /> */}
+                {/* <h2 className="text-2xl sm:text-3xl font-bold">Provably Fair Gaming</h2> */}
               </div>
               <p className="text-base-content/80 leading-relaxed">
-                SolWin ensures complete fairness in all games using Chainlink's Verifiable Random Function (VRF).
-                This cryptographically secure randomness guarantees that:
+                SolWin leverages Switchboard's decentralized oracle network on Solana to ensure complete fairness in all games.
+                Our integration with Switchboard provides secure and verifiable randomness that guarantees:
               </p>
               <ul className="space-y-2">
                 <li className="flex items-center gap-2">
-                  <Icon name="check" className="text-success" />
-                  <span>Every game outcome is completely random and verifiable</span>
+                  <Icon name="tickCircle" className="text-success" />
+                  <span>Decentralized random number generation through Switchboard's oracle network</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Icon name="check" className="text-success" />
-                  <span>Results cannot be manipulated by anyone, including us</span>
+                  <Icon name="tickCircle" className="text-success" />
+                  <span>Transparent and verifiable game outcomes on Solana blockchain</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Icon name="check" className="text-success" />
-                  <span>All randomness is verified on-chain for transparency</span>
+                  <Icon name="tickCircle" className="text-success" />
+                  <span>High-performance randomness optimized for Solana's speed</span>
                 </li>
               </ul>
+              <div className="flex flex-wrap gap-3 mt-6">
+                <a 
+                  href="https://switchboard.xyz/solana" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="btn btn-primary gap-2"
+                >
+                  <Icon name="link" className="text-lg" />
+                  Read More
+                </a>
+           
+              </div>
             </div>
 
             {/* Right side with stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-4 w-full lg:w-auto">
-              <div className="stat bg-base-300/50 rounded-2xl p-4">
-                <div className="stat-title text-base-content/60">Total Games</div>
-                <div className="stat-value text-primary">25K+</div>
-                <div className="stat-desc">Last 30 days</div>
+            <div className="grid flex-1 grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-4 w-full lg:w-auto">
+              <div className="stat bg-base-300/50 rounded-2xl p-4 flex flex-col items-center justify-center">
+                <Icon name="game" className="text-4xl text-primary mb-2" />
+                <div className="font-semibold text-base-content/80">Instant Games</div>
+                <div className="text-sm text-base-content/60">Fast & Secure</div>
               </div>
-              <div className="stat bg-base-300/50 rounded-2xl p-4">
-                <div className="stat-title text-base-content/60">Paid Out</div>
-                <div className="stat-value text-secondary">$850K</div>
-                <div className="stat-desc">In SOL tokens</div>
+              <div className="stat bg-base-300/50 rounded-2xl p-4 flex flex-col items-center justify-center">
+                <Icon name="solana" className="text-4xl text-secondary mb-2" />
+                <div className="font-semibold text-base-content/80">Solana Network</div>
+                <div className="text-sm text-base-content/60">Lightning Fast</div>
               </div>
-              <div className="stat bg-base-300/50 rounded-2xl p-4">
-                <div className="stat-title text-base-content/60">Players</div>
-                <div className="stat-value text-accent">12K+</div>
-                <div className="stat-desc">Active users</div>
+              <div className="stat bg-base-300/50 rounded-2xl p-4 flex flex-col items-center justify-center">
+                <Icon name="searchNormal" className="text-4xl text-success mb-2" />
+                <div className="font-semibold text-base-content/80">Traceable</div>
+                <div className="text-sm text-base-content/60">Provably Fair</div>
               </div>
-              <div className="stat bg-base-300/50 rounded-2xl p-4">
-                <div className="stat-title text-base-content/60">Success Rate</div>
-                <div className="stat-value text-success">99.9%</div>
-                <div className="stat-desc">Transaction success</div>
+              <div className="stat bg-base-300/50 rounded-2xl p-4 flex flex-col items-center justify-center">
+                <Icon name="shield" className="text-4xl text-success mb-2" />
+                <div className="font-semibold text-base-content/80">Secure Platform</div>
+                <div className="text-sm text-base-content/60">Fully Audited</div>
               </div>
             </div>
           </div>

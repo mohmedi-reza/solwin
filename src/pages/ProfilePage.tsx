@@ -39,7 +39,8 @@ const ProfilePage: React.FC = () => {
     data: playerHistoryPages,
     fetchNextPage,
     hasNextPage,
-    isFetchingNextPage
+    isFetchingNextPage,
+    refetch
   } = usePlayerHistory(10);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const { data: walletData } = useWalletBalance();
@@ -50,6 +51,11 @@ const ProfilePage: React.FC = () => {
   // Update the initial sort state to timestamp/desc for newest first
   const [sortField, setSortField] = useState<SortField>('timestamp');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  // Add effect to refetch data when component mounts
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   // Add effect for infinite scrolling
   useEffect(() => {
