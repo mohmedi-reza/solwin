@@ -1,5 +1,5 @@
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Icon from "../components/icon/icon.component";
@@ -30,26 +30,27 @@ const HomePage: React.FC = () => {
     {
       id: 1,
       title: "Video Poker",
-      description: "Test your luck with poker hands and win up to 50x multiplier!",
+      description:
+        "Test your luck with poker hands and win up to 50x multiplier!",
       status: "Active",
       image: "cover-1.png",
       stats: {
         minBet: 10,
         maxWin: "50x",
-        players: 1205
-      }
+        players: 1205,
+      },
     },
     {
       id: 2,
       title: "Duel Game",
       description: "Challenge other players in 1v1 duels with custom stakes",
-      status: "Active",
+      status: "Popular",
       image: "cover-2.png",
       stats: {
         minBet: 5,
         maxWin: "2x",
-        players: 856
-      }
+        players: 856,
+      },
     },
     {
       id: 3,
@@ -57,7 +58,7 @@ const HomePage: React.FC = () => {
       description: "Fast-paced betting game with multipliers",
       status: "Popular",
       image: "cover-6.png",
-      stats: { minBet: 5, maxWin: "25x", players: 645 }
+      stats: { minBet: 5, maxWin: "25x", players: 645 },
     },
     {
       id: 4,
@@ -65,7 +66,7 @@ const HomePage: React.FC = () => {
       status: "Trend",
       image: "cover-3.png",
       description: "Mega jackpot with progressive multipliers",
-      stats: { minBet: 20, maxWin: "200x", players: 432 }
+      stats: { minBet: 20, maxWin: "200x", players: 432 },
     },
     {
       id: 5,
@@ -73,7 +74,7 @@ const HomePage: React.FC = () => {
       status: "Trend",
       image: "cover-4.png",
       description: "Spin the wheel of fortune",
-      stats: { minBet: 1, maxWin: "20x", players: 890 }
+      stats: { minBet: 1, maxWin: "20x", players: 890 },
     },
     {
       id: 6,
@@ -81,8 +82,8 @@ const HomePage: React.FC = () => {
       status: "Popular",
       image: "cover-5.png",
       description: "Classic fortune wheel with bonuses",
-      stats: { minBet: 5, maxWin: "15x", players: 567 }
-    }
+      stats: { minBet: 5, maxWin: "15x", players: 567 },
+    },
   ];
 
   const [selectedFilter, setSelectedFilter] = useState("All");
@@ -100,7 +101,7 @@ const HomePage: React.FC = () => {
           const balance = await connection.getBalance(publicKey);
           setWalletBalance(balance / LAMPORTS_PER_SOL);
         } catch (error) {
-          console.error('Error refreshing balance:', error);
+          console.error("Error refreshing balance:", error);
         }
       }
     };
@@ -116,7 +117,7 @@ const HomePage: React.FC = () => {
         const balance = await connection.getBalance(publicKey);
         setWalletBalance(balance / LAMPORTS_PER_SOL);
       } catch (error) {
-        console.error('Error refreshing balance:', error);
+        console.error("Error refreshing balance:", error);
       }
     }
   };
@@ -154,21 +155,28 @@ const HomePage: React.FC = () => {
                   </span>
                 </h1>
                 <p className="text-base text-base-content/70 backdrop-blur-sm font-medium">
-                  Experience the thrill of poker with instant payouts and up to 50x multipliers
+                  Experience the thrill of poker with instant payouts and up to
+                  50x multipliers
                 </p>
                 <div className="flex gap-3">
                   <Link
                     to="/game"
                     className="btn btn-primary gap-2 px-6 group relative hover:scale-105 transition-all shadow-[0_4px_12px_rgba(var(--primary),0.25)] hover:shadow-[0_6px_16px_rgba(var(--primary),0.35)]"
                   >
-                    <Icon name="game" className="text-xl group-hover:rotate-12 transition-transform" />
+                    <Icon
+                      name="game"
+                      className="text-xl group-hover:rotate-12 transition-transform"
+                    />
                     <span className="font-bold">Play Now</span>
                   </Link>
                   <button
                     onClick={() => setIsWalletModalOpen(true)}
                     className="btn btn-primary btn-outline gap-2 px-6 group relative hover:scale-105 transition-all"
                   >
-                    <Icon name="wallet" className="text-xl group-hover:rotate-12 transition-transform" />
+                    <Icon
+                      name="wallet"
+                      className="text-xl group-hover:rotate-12 transition-transform"
+                    />
                     <span className="font-bold">Deposit</span>
                     <span className="absolute -top-1 -right-1 status status-error size-2 animate-ping"></span>
                   </button>
@@ -179,12 +187,18 @@ const HomePage: React.FC = () => {
               <div className="flex flex-col items-center sm:items-end gap-3 sm:gap-4 w-full sm:w-auto">
                 <div className="flex items-center gap-4 text-sm w-full sm:w-auto justify-center sm:justify-end">
                   <div className="flex items-center gap-1.5 text-base-content/80 font-medium">
-                    <Icon name="wallet" className="text-lg text-primary drop-shadow" />
+                    <Icon
+                      name="wallet"
+                      className="text-lg text-primary drop-shadow"
+                    />
                     Min: $10
                   </div>
                   <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
                   <div className="flex items-center gap-1.5 text-base-content/80 font-medium">
-                    <Icon name="cup" className="text-lg text-secondary drop-shadow" />
+                    <Icon
+                      name="cup"
+                      className="text-lg text-secondary drop-shadow"
+                    />
                     Max: 50x
                   </div>
                 </div>
@@ -198,7 +212,9 @@ const HomePage: React.FC = () => {
           {/* Header and Filter Section */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
             <div className="text-start w-full sm:w-auto">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold">Game List</h1>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold">
+                Game List
+              </h1>
               <span className="text-sm sm:text-base text-base-content/70">
                 Cupidatat ut quis labore elit in voluptate non mollit
               </span>
@@ -209,8 +225,9 @@ const HomePage: React.FC = () => {
               {["All", "Active", "Trend", "Popular"].map((filter) => (
                 <button
                   key={filter}
-                  className={`badge badge-lg badge-outline whitespace-nowrap ${selectedFilter === filter ? "badge-primary" : ""
-                    }`}
+                  className={`badge badge-lg badge-outline whitespace-nowrap ${
+                    selectedFilter === filter ? "badge-primary" : ""
+                  }`}
                   onClick={() => setSelectedFilter(filter)}
                 >
                   {filter}
@@ -222,7 +239,10 @@ const HomePage: React.FC = () => {
           {/* Game Cards Grid - Better responsive columns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {filteredCards.map((card) => (
-              <div key={card.id} className="card bg-base-200 border border-white/15 hover:scale[1.2] rounded-3xl hover:shadow-xl transition-all flex flex-col min-h-[400px]  overflow-hidden">
+              <div
+                key={card.id}
+                className="card bg-base-200 border border-white/15 hover:scale[1.2] rounded-3xl hover:shadow-xl transition-all flex flex-col min-h-[400px]  overflow-hidden"
+              >
                 {/* Game Image - Simplified structure */}
                 <div className="relative h-36 sm:h-40 lg:h-48">
                   {/* Base gradient overlay */}
@@ -232,10 +252,15 @@ const HomePage: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10 mix-blend-overlay"></div>
 
                   {/* Dynamic accent overlay based on status */}
-                  <div className={`absolute inset-0 ${card.status === "Active" ? "bg-success/5" :
-                    card.status === "Trend" ? "bg-secondary/5" :
-                      "bg-accent/5"
-                    } mix-blend-overlay`}></div>
+                  <div
+                    className={`absolute inset-0 ${
+                      card.status === "Active"
+                        ? "bg-success/5"
+                        : card.status === "Trend"
+                        ? "bg-secondary/5"
+                        : "bg-accent/5"
+                    } mix-blend-overlay`}
+                  ></div>
 
                   <img
                     src={card.image}
@@ -261,11 +286,16 @@ const HomePage: React.FC = () => {
                   <div className="flex-1 space-y-3">
                     {/* Title and status */}
                     <div className="flex justify-between items-start gap-2">
-                      <h3 className="text-lg sm:text-xl font-bold">{card.title}</h3>
-                      <span className={`badge ${card.status === "Active"
-                        ? "badge-success"
-                        : "badge-outline opacity-50 bg-base-200"
-                        }`}>
+                      <h3 className="text-lg sm:text-xl font-bold">
+                        {card.title}
+                      </h3>
+                      <span
+                        className={`badge ${
+                          card.status === "Active"
+                            ? "badge-success"
+                            : "badge-outline opacity-50 bg-base-200"
+                        }`}
+                      >
                         {card.status}
                       </span>
                     </div>
@@ -279,17 +309,25 @@ const HomePage: React.FC = () => {
                     <div className="flex items-center gap-3 text-sm flex-wrap">
                       <div className="flex items-center gap-1.5">
                         <Icon name="wallet" className="text-primary" />
-                        <span>{card.status === "Active" ? `$${card.stats.minBet}` : "--"}</span>
+                        <span>
+                          {card.status === "Active"
+                            ? `$${card.stats.minBet}`
+                            : "--"}
+                        </span>
                       </div>
                       <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
                       <div className="flex items-center gap-1.5">
                         <Icon name="cup" className="text-secondary" />
-                        <span>{card.status === "Active" ? card.stats.maxWin : "--"}</span>
+                        <span>
+                          {card.status === "Active" ? card.stats.maxWin : "--"}
+                        </span>
                       </div>
                       <div className="w-1 h-1 bg-base-content/20 rounded-full"></div>
                       <div className="flex items-center gap-1.5">
                         <Icon name="user" className="text-accent" />
-                        <span>{card.status === "Active" ? card.stats.players : "--"}</span>
+                        <span>
+                          {card.status === "Active" ? card.stats.players : "--"}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -297,7 +335,11 @@ const HomePage: React.FC = () => {
                   {/* Button */}
                   <div className="mt-4">
                     <button
-                      onClick={() => navigate(card.id === 2 ? '/duel' : `/game?id=${card.id}`)}
+                      onClick={() =>
+                        navigate(
+                          card.id === 2 ? "/duel" : `/game?id=${card.id}`
+                        )
+                      }
                       disabled={card.status !== "Active"}
                       className="w-full btn btn-primary"
                     >
@@ -317,8 +359,12 @@ const HomePage: React.FC = () => {
         {/* How It Works Section */}
         <div className="w-full bg-base-200/50 rounded-3xl p-6 sm:p-8 lg:p-10 mt-8 border border-base-content/10">
           <div className="text-center mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-2">How It Works</h2>
-            <p className="text-base-content/70">Start playing in three simple steps</p>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2">
+              How It Works
+            </h2>
+            <p className="text-base-content/70">
+              Start playing in three simple steps
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -328,10 +374,10 @@ const HomePage: React.FC = () => {
                 {/* <div className="badge badge-primary absolute -top-3">Step 1</div> */}
                 <Icon name="wallet" className="text-4xl text-primary mb-4" />
                 <h3 className="card-title">Connect Wallet</h3>
-                <p className="text-base-content/70">Connect your Solana wallet with just one click</p>
-                <div className="card-actions justify-end mt-4">
-
-                </div>
+                <p className="text-base-content/70">
+                  Connect your Solana wallet with just one click
+                </p>
+                <div className="card-actions justify-end mt-4"></div>
               </div>
             </div>
 
@@ -341,10 +387,10 @@ const HomePage: React.FC = () => {
                 {/* <div className="badge badge-primary absolute -top-3">Step 2</div> */}
                 <Icon name="solana" className="text-4xl text-primary mb-4" />
                 <h3 className="card-title">Deposit SOL</h3>
-                <p className="text-base-content/70">Fund your account with SOL tokens instantly</p>
-                <div className="card-actions justify-end mt-4">
-
-                </div>
+                <p className="text-base-content/70">
+                  Fund your account with SOL tokens instantly
+                </p>
+                <div className="card-actions justify-end mt-4"></div>
               </div>
             </div>
 
@@ -354,13 +400,13 @@ const HomePage: React.FC = () => {
                 {/* <div className="badge badge-primary absolute -top-3">Step 3</div> */}
                 <Icon name="game" className="text-4xl text-primary mb-4" />
                 <h3 className="card-title">Start Playing</h3>
-                <p className="text-base-content/70">Choose your game and start winning</p>
-                <div className="card-actions justify-end mt-4">
-                </div>
+                <p className="text-base-content/70">
+                  Choose your game and start winning
+                </p>
+                <div className="card-actions justify-end mt-4"></div>
               </div>
             </div>
           </div>
-
         </div>
         {/* Trust Section */}
         <div className="w-full  bg-base-200/50 rounded-3xl p-6 sm:p-8 lg:p-10 mt-8 border border-base-content/10">
@@ -368,39 +414,51 @@ const HomePage: React.FC = () => {
             {/* Left side with Switchboard info */}
             <div className="flex-2 space-y-4">
               <div className="flex flex-col items-start gap-3">
-                <Icon  name="switchboardSolana" className="text-[300px] h-fit text-primary mb-4" />
+                <Icon
+                  name="switchboardSolana"
+                  className="text-[300px] h-fit text-primary mb-4"
+                />
                 {/* <img src="switchboard-solana.png" alt="Switchboard Solana" className="w-100 drop-shadow-sm opacity-70" /> */}
                 {/* <h2 className="text-2xl sm:text-3xl font-bold">Provably Fair Gaming</h2> */}
               </div>
               <p className="text-base-content/80 leading-relaxed">
-                SolWin leverages Switchboard's decentralized oracle network on Solana to ensure complete fairness in all games.
-                Our integration with Switchboard provides secure and verifiable randomness that guarantees:
+                SolWin leverages Switchboard's decentralized oracle network on
+                Solana to ensure complete fairness in all games. Our integration
+                with Switchboard provides secure and verifiable randomness that
+                guarantees:
               </p>
               <ul className="space-y-2">
                 <li className="flex items-center gap-2">
                   <Icon name="tickCircle" className="text-success" />
-                  <span>Decentralized random number generation through Switchboard's oracle network</span>
+                  <span>
+                    Decentralized random number generation through Switchboard's
+                    oracle network
+                  </span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Icon name="tickCircle" className="text-success" />
-                  <span>Transparent and verifiable game outcomes on Solana blockchain</span>
+                  <span>
+                    Transparent and verifiable game outcomes on Solana
+                    blockchain
+                  </span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Icon name="tickCircle" className="text-success" />
-                  <span>High-performance randomness optimized for Solana's speed</span>
+                  <span>
+                    High-performance randomness optimized for Solana's speed
+                  </span>
                 </li>
               </ul>
               <div className="flex flex-wrap gap-3 mt-6">
-                <a 
-                  href="https://switchboard.xyz/solana" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
+                <a
+                  href="https://switchboard.xyz/solana"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="btn btn-primary gap-2"
                 >
                   <Icon name="link" className="text-lg" />
                   Read More
                 </a>
-           
               </div>
             </div>
 
@@ -408,23 +466,42 @@ const HomePage: React.FC = () => {
             <div className="grid flex-1 grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-4 w-full lg:w-auto">
               <div className="stat bg-base-300/50 rounded-2xl p-4 flex flex-col items-center justify-center">
                 <Icon name="game" className="text-4xl text-primary mb-2" />
-                <div className="font-semibold text-base-content/80">Instant Games</div>
-                <div className="text-sm text-base-content/60">Fast & Secure</div>
+                <div className="font-semibold text-base-content/80">
+                  Instant Games
+                </div>
+                <div className="text-sm text-base-content/60">
+                  Fast & Secure
+                </div>
               </div>
               <div className="stat bg-base-300/50 rounded-2xl p-4 flex flex-col items-center justify-center">
                 <Icon name="solana" className="text-4xl text-secondary mb-2" />
-                <div className="font-semibold text-base-content/80">Solana Network</div>
-                <div className="text-sm text-base-content/60">Lightning Fast</div>
+                <div className="font-semibold text-base-content/80">
+                  Solana Network
+                </div>
+                <div className="text-sm text-base-content/60">
+                  Lightning Fast
+                </div>
               </div>
               <div className="stat bg-base-300/50 rounded-2xl p-4 flex flex-col items-center justify-center">
-                <Icon name="searchNormal" className="text-4xl text-success mb-2" />
-                <div className="font-semibold text-base-content/80">Traceable</div>
-                <div className="text-sm text-base-content/60">Provably Fair</div>
+                <Icon
+                  name="searchNormal"
+                  className="text-4xl text-success mb-2"
+                />
+                <div className="font-semibold text-base-content/80">
+                  Traceable
+                </div>
+                <div className="text-sm text-base-content/60">
+                  Provably Fair
+                </div>
               </div>
               <div className="stat bg-base-300/50 rounded-2xl p-4 flex flex-col items-center justify-center">
                 <Icon name="shield" className="text-4xl text-success mb-2" />
-                <div className="font-semibold text-base-content/80">Secure Platform</div>
-                <div className="text-sm text-base-content/60">Fully Audited</div>
+                <div className="font-semibold text-base-content/80">
+                  Secure Platform
+                </div>
+                <div className="text-sm text-base-content/60">
+                  Fully Audited
+                </div>
               </div>
             </div>
           </div>
@@ -437,7 +514,8 @@ const HomePage: React.FC = () => {
               <Icon name="shield" className="text-3xl text-primary mb-2" />
               <h3 className="card-title">Secure & Fast</h3>
               <p className="text-base-content/70">
-                Built on Solana for lightning-fast transactions and military-grade security
+                Built on Solana for lightning-fast transactions and
+                military-grade security
               </p>
             </div>
           </div>
@@ -465,16 +543,23 @@ const HomePage: React.FC = () => {
         <div className="w-full space-y-20 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-3xl p-6 sm:p-8 lg:p-10 mt-8 mb-8 border border-base-content/10">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             <div className="text-center lg:text-left">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-2">Stay Updated</h2>
-              <p className="text-base-content/70">Get the latest news and special offers directly to your inbox</p>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2">
+                Stay Updated
+              </h2>
+              <p className="text-base-content/70">
+                Get the latest news and special offers directly to your inbox
+              </p>
             </div>
             <div className="flex gap-2 w-full lg:w-auto">
-              <input type="email" placeholder="Enter your email" className="input input-bordered w-full lg:w-80" />
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="input input-bordered w-full lg:w-80"
+              />
               <button className="btn btn-primary">Subscribe</button>
             </div>
           </div>
         </div>
-
       </div>
 
       {/* Add WalletModal */}
