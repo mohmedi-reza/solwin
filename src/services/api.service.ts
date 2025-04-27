@@ -8,7 +8,7 @@ import { AuthService } from "./auth.service";
 import { AuthError } from "../types/auth.interface";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://api-poker-sol.bestudios.dev";
+  import.meta.env.VITE_API_BASE_URL || "https://solwin-nodejs-backend.onrender.com";
 
 // Extend the AxiosRequestConfig to include _retry property
 interface RetryableRequest extends InternalAxiosRequestConfig {
