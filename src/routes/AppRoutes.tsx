@@ -5,6 +5,9 @@ import ProfilePage from "../pages/ProfilePage";
 import GamePage from "../pages/GamePage";
 import HistoryPage from "../pages/HistoryPage";
 import NotFoundPage from "../pages/NotFoundPage";
+import TermsPage from "../pages/TermsPage";
+import PrivacyPage from "../pages/PrivacyPage";
+import ContactPage from "../pages/ContactPage";
 
 const AppRoutes = () => {
   return (
@@ -16,6 +19,9 @@ const AppRoutes = () => {
           <Route path="/me" element={<ProfilePage />} />
           <Route path="/game" element={<GamePage />} />
           <Route path="/history" element={<HistoryPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/contact" element={<ContactPage />} />
         </Route>
         {/* Routes without layout */}
         <Route path="*" element={<NotFoundPage />} />

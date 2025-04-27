@@ -8,7 +8,7 @@ import { AuthService } from "./auth.service";
 import { AuthError } from "../types/auth.interface";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://api-poker-sol.bestudios.dev";
+  import.meta.env.VITE_API_BASE_URL || "https://solwin-nodejs-backend.onrender.com";
 
 // Extend the AxiosRequestConfig to include _retry property
 interface RetryableRequest extends InternalAxiosRequestConfig {
@@ -56,11 +56,7 @@ const processQueue = (error: Error | null) => {
 apiClient.interceptors.request.use(
   (config) => {
     // Log request for debugging
-    console.log("API Request:", {
-      url: config.url,
-      method: config.method,
-      data: config.data,
-    });
+
     return config;
   },
   (error) => {
@@ -82,10 +78,20 @@ apiClient.interceptors.request.use(
 
 // Response interceptor
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    return response;
+  },
   async (error: AxiosError<AuthError>) => {
+    console.error("API Error:", {
+      url: error.config?.url,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
+
     const originalRequest = error.config as RetryableRequest;
 
+    // Handle 401 and token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         // If token refresh is in progress, queue the request
@@ -111,25 +117,68 @@ apiClient.interceptors.response.use(
             return apiClient(originalRequest);
           }
         }
-        AuthService.setAuthState('unauthenticated');
+        AuthService.setAuthState("unauthenticated");
         throw new Error("Token refresh failed");
       } catch (refreshError) {
         processQueue(refreshError as Error); // Process queue with error
         AuthService.clearTokens();
-        AuthService.setAuthState('unauthenticated');
+        AuthService.setAuthState("unauthenticated");
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
     }
 
-    // Handle other errors
-    if (error.response?.status === 500) {
-      toast.error("Server error. Please try again later.");
+    // Enhanced error handling for different status codes
+    if (error.response) {
+      switch (error.response.status) {
+        case 400:
+          toast.error("Invalid request. Please check your input.");
+          break;
+        case 403:
+          toast.error("You don't have permission to perform this action.");
+          break;
+        case 404:
+          toast.error("Resource not found.");
+          break;
+        case 422:
+          toast.error("Validation error. Please check your input.");
+          break;
+        case 429:
+          toast.error("Too many requests. Please try again later.");
+          break;
+        case 500:
+          toast.error("Server error. Please try again later.");
+          break;
+        case 502:
+          toast.error("Bad gateway. Please try again later.");
+          break;
+        case 503:
+          toast.error("Service unavailable. Please try again later.");
+          break;
+        default:
+          toast.error("An unexpected error occurred. Please try again.");
+          break;
+      }
+    } else if (error.code === "ECONNABORTED") {
+      toast.error("Request timeout. Please check your connection.");
+    } else if (!error.response) {
+      toast.error("Network error. Please check your connection.");
     }
 
     return Promise.reject(error);
   }
 );
+
+// Create a public instance without auth interceptors
+export const createPublicClient = () => {
+  return axios.create({
+    baseURL: API_BASE_URL,
+    timeout: 15000,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
 
 export default apiClient;
